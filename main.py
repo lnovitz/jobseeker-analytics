@@ -37,11 +37,17 @@ async def root():
 @app.get("/processing")
 async def processing(request: Request, file: str = Query(...)):
     global api_call_finished
+    # List of valid file names
+    valid_files = ["file1.csv", "file2.csv", "file3.csv"]
     # Check if the file exists (i.e., job processing completed)
     if api_call_finished:
-        logger.info(f"Processing complete for file: {file}")
+        if file in valid_files:
+            logger.info(f"Processing complete for file: {file}")
             # Automatically redirect to the success page after processing is done
-        return RedirectResponse(url=f"/success?file={file}")
+            return RedirectResponse(url=f"/success?file={file}")
+        else:
+            logger.error(f"Invalid file: {file}")
+            return RedirectResponse(url="/")
     else:
         logger.info(f"Processing not complete for file: {file}")
         # Show a message that the job is still processing
