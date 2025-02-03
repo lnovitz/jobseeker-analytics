@@ -26,6 +26,7 @@ date_days_ago = current_date - timedelta(days=DEFAULT_DAYS_AGO)
 formatted_date = date_days_ago.strftime('%Y/%m/%d')
 
 QUERY_APPLIED_EMAIL_FILTER = (
+    '("interview" AND "schedule") OR '
     '(subject:"thank" AND from:"no-reply@ashbyhq.com") OR '
     '(subject:"thank" AND from:"careers@") OR '
     '(subject:"thank" AND from:"no-reply@greenhouse.io") OR '
@@ -59,6 +60,22 @@ QUERY_APPLIED_EMAIL_FILTER = (
     'subject:"job application confirmation" OR '
     'subject:"ve been referred" OR '
     '(subject:"we received your" AND subject:"application") '
-    '-subject:"watering"'
+    '-subject:"watering" '
+    '-from:"@mail.theresanaiforthat.com" '
+    '-from:"@leetcode.com" ' 
+    '-from:@thenewclub.fyi '
+    '-from:@substack.com '
+    '-from:@codepath.org '
+    '-from:@mail.beehiiv.com '
+    '-from:@womenimpacttech.com '
+    '-from:@morningbrew.com '
+    '-from:@reclaim.ai '
+    '-from:@hellointerview.com '
+    '-subject:"CodePath" '
+    '-from:@huntr.co '
+    '-from:@email.meetup.com'
+    '-from:@womenwhocode.com '
+    '-from:@emails.nixle.com'
+    '-from:volunteer '
     f'after:{formatted_date}'
 )  # label:jobs -label:query4
