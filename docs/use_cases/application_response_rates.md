@@ -59,6 +59,45 @@ At a high-level, here’s how statistics calculation can add value to the lives 
 
 ## Data Model
 
+**Application**
+In order to display a single application we will use this data type.
+
+**Fields**
+
+All fields are required.
+
+“id” (String) - Unique ID and primary key of the application 
+
+“name” (String) - The name of the user who applied.
+
+“company” (String) - The name of the company that was applied to.
+
+“detailsID” (Long) - The ID of the details of the application, were the user to want to read more.
+
+“title” (String) - Position the user was applying for.
+
+“time” (Long) - Date/time the application was submitted.
+
+**User History**
+In order to display a user’s statistics we will retrieve their History.
+
+**Fields**
+
+All fields are required.
+
+“id” (String) - Unique ID and primary key of the user 
+
+“name” (String) - The name of the user, shown in a title style
+
+“applications” (Array<String>) - An array of previous applications 
+
+“acceptances” (Array<String>) - An array of previous acceptances the user received
+
+“rejections” (Array<String>) - An array of previous rejections the user received
+
+“interviews” (Array<String>) - An array of previous interviews the user scheduled
+
+
 ## Overall Approach
 The goal is to
 
