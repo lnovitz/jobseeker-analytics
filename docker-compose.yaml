@@ -1,10 +1,10 @@
 # docker-compose.yaml
 services:
-  web:
-    build: .
+  backend:
+    build: ./backend  # Point to the backend folder where the Dockerfile is located
     ports:
       - "8000:8000"  # Map host port 8000 to container port 8000
     volumes:
-      - ./:/app # Mount the current directory for code changes to take effect immediately
-    env_file: ".env"
-    restart: always # Restart if the container crashes
+      - ./backend:/app  # Mount backend directory for live code updates
+    env_file: "./backend/.env"  # Use the .env file inside backend
+    restart: always  # Restart container if it crashes
