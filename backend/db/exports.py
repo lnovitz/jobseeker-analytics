@@ -1,7 +1,7 @@
 from sqlmodel import SQLModel, Field
 from datetime import datetime
 from typing import Optional
-from pydantic import field_validator, ValidationError
+from pydantic import field_validator
 
 class Exports(SQLModel, table=True):
     export_id: Optional[int] = Field(default=None, primary_key=True)
