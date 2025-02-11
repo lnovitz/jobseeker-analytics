@@ -77,6 +77,7 @@ spacy-loggers==1.0.5
 spacy-lookups-data==1.0.5
 srsly==2.5.0
 starlette==0.41.3
+sqlmodel==0.0.22
 thinc==8.2.5
 tqdm==4.66.6
 typer==0.15.1
