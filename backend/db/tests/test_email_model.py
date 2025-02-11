@@ -1,6 +1,6 @@
 import pytest
 from datetime import datetime
-from db.database import get_session, engine, create_db_and_tables  
+from db.database import get_session, create_db_and_tables  
 from db.emails import Email
 from sqlmodel import select
 
