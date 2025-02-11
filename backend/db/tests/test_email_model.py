@@ -1,7 +1,7 @@
 import pytest
 from datetime import datetime
-from db.database import get_session, create_db_and_tables  
-from db.emails import Email
+from ..database import get_session, create_db_and_tables  
+from ..emails import Email
 from sqlmodel import select
 
 @pytest.fixture(scope="function")
