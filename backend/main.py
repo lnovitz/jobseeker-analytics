@@ -7,9 +7,20 @@ from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 
+from googleapiclient.discovery import build
+from constants import QUERY_APPLIED_EMAIL_FILTER
+from utils.file_utils import get_user_filepath
+from utils.llm_utils import process_email
+
 from utils.file_utils import get_user_filepath
 from session.session_layer import validate_session
 from utils.config_utils import get_settings
+from utils.auth_utils import AuthenticatedUser
+from utils.db_utils import export_to_csv
+from utils.email_utils import (
+    get_email_ids,
+    get_email,
+)
 
 # Import Google login routes
 from login.google_login import router as google_login_router
@@ -77,6 +88,54 @@ def success(request: Request, user_id: str = Depends(validate_session)):
         return RedirectResponse("/logout", status_code=303)
     today = str(datetime.date.today())
     return templates.TemplateResponse("success.html", {"request": request, "today": today})
+
+
+def fetch_emails(user: AuthenticatedUser) -> None:
+    global api_call_finished
+    try:
+        logger.info("user_id:%s fetch_emails", user.user_id)
+
+        service = build("gmail", "v1", credentials=user.creds)
+
+        messages = get_email_ids(query=QUERY_APPLIED_EMAIL_FILTER, gmail_instance=service)
+        # Directory to save the emails
+        os.makedirs(user.filepath, exist_ok=True)
+
+        for message in messages:
+            message_data = {}
+            # (email_subject, email_from, email_domain, company_name, email_dt)
+            msg_id = message["id"]
+
+            # fetch email content
+            msg = get_email(message_id=msg_id, gmail_instance=service)
+            if not msg:
+                logger.warning("user_id:%s failed to fetch email with id: %s", user.user_id, msg_id)
+                continue
+            
+            # get text_content, if fail will return empty string instead of error
+            result = process_email(msg.get("text_content", ""))
+
+            if not isinstance(result, str) and result:
+                logger.info("user_id:%s  successfully extracted email", user.user_id)
+            else:
+                logger.info("user_id:%s failed to extract email", user.user_id)
+                result = {}
+
+            message_data["company_name"] = [result.get("company_name", "")]
+            message_data["application_status"] = [result.get("application_status", "")]
+            message_data["received_at"] = [msg.get("date", "")]
+            message_data["subject"] = [msg.get("subject", "")]
+            message_data["from"] = [msg.get("from", "")]
+
+            # exporting the email data to a CSV file
+            export_to_csv(user.filepath, user.user_id, message_data)
+
+        api_call_finished = True
+        logger.info("user_id:%s email fetching complete", user.user_id)
+
+    except Exception as e:
+        logger.error("user_id:%s encountered an error: %s", user.user_id, str(e))
+        api_call_finished = False
 
 # Register Google login routes
 app.include_router(google_login_router)
