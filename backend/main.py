@@ -12,7 +12,6 @@ from constants import QUERY_APPLIED_EMAIL_FILTER
 from utils.file_utils import get_user_filepath
 from utils.llm_utils import process_email
 
-from utils.file_utils import get_user_filepath
 from session.session_layer import validate_session
 from utils.config_utils import get_settings
 from utils.auth_utils import AuthenticatedUser
@@ -78,6 +77,7 @@ async def download_file(request: Request, user_id: str = Depends(validate_sessio
     directory = get_user_filepath(user_id)
     filename = "emails.csv"
     filepath = f"{directory}/{filename}"
+    print(f"Checking if file exists: {filepath}")  # Debugging print
     if os.path.exists(filepath):
         return FileResponse(filepath)
     return HTMLResponse(content="File not found :(", status_code=404)
@@ -88,7 +88,6 @@ def success(request: Request, user_id: str = Depends(validate_session)):
         return RedirectResponse("/logout", status_code=303)
     today = str(datetime.date.today())
     return templates.TemplateResponse("success.html", {"request": request, "today": today})
-
 
 def fetch_emails(user: AuthenticatedUser) -> None:
     global api_call_finished
