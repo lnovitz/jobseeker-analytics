@@ -7,7 +7,6 @@ from google_auth_oauthlib.flow import Flow
 from utils.auth_utils import AuthenticatedUser
 from session.session_layer import create_random_session_string
 from utils.config_utils import get_settings
-from main import fetch_emails
 
 # Logger setup
 logger = logging.getLogger(__name__)
@@ -20,6 +19,7 @@ router = APIRouter()
 
 @router.get("/login")
 async def login(request: Request, background_tasks: BackgroundTasks):
+    from main import fetch_emails
     """Handles Google OAuth2 login and authorization code exchange."""
     code = request.query_params.get("code")
     flow = Flow.from_client_secrets_file(
