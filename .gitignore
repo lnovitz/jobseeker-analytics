@@ -9,6 +9,12 @@
 venv/
 __pycache__/
 .history/
+# Ignore all .env files
+.env
+.env.*
+
+# But do NOT ignore .env.sample
+!.env.sample
 
 # Debug logs
 npm-debug.log*
