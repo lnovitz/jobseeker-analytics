@@ -28,7 +28,12 @@ from login.google_login import router as google_login_router
 app = FastAPI()
 settings = get_settings()
 app.add_middleware(SessionMiddleware, secret_key=settings.COOKIE_SECRET)
-app.mount("/static", StaticFiles(directory="static"), name="static")
+# prevent error during testing
+static_dir = "static"
+if os.path.isdir(static_dir):
+    app.mount("/static", StaticFiles(directory=static_dir), name="static")
+else:
+    print(f"Warning: Directory '{static_dir}' does not exist. Skipping static file mount.")
 
 origins = [
     "http://localhost:3000",  # Local Next.js Dev Server
