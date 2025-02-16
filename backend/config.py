@@ -8,6 +8,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class Settings(BaseSettings):
     GOOGLE_SCOPES: Annotated[List[str], NoDecode]
     REDIRECT_URI: str

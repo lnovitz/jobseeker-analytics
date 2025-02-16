@@ -1,7 +1,7 @@
 export type SiteConfig = typeof siteConfig;
 
 export const siteConfig = {
-	name: "Jobba",
+	name: "jobba.help",
 	description: "Your job hunt made easy!",
 	navItems: [
 		{

@@ -1,3 +1,7 @@
+
+[![Watch the video](http://img.youtube.com/vi/-cOKR4JtceY/maxresdefault.jpg)](https://www.youtube.com/watch?v=-cOKR4JtceY)
+🎥 Sneak Peek: https://www.youtube.com/watch?v=-cOKR4JtceY
+
 ## _"um... what's so special about another job tracker spreadsheet?"_
 
 What's special is that the spreadsheet is automagically updated.

@@ -8,14 +8,16 @@ import NextLink from "next/link";
 import { siteConfig } from "@/config/site";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { GithubIcon, HeartFilledIcon, GoogleIcon } from "@/components/icons";
+
 import { usePathname } from "next/navigation";
+import RedirectUrl from "@/utils/navbar-utils";
 
 export const Navbar = () => {
 	const pathname = usePathname();
 	const router = useRouter();
 
 	const handleGoogleLogin = () => {
-		router.push("http://localhost:8000/login"); // Update with your FastAPI server URL
+		router.push(`${RedirectUrl("PROD")}/login`);
 	};
 
 	const handleGoogleLogout = async () => {
@@ -27,7 +29,9 @@ export const Navbar = () => {
 			<NavbarContent className="basis-1/5 sm:basis-full" justify="start">
 				<NavbarBrand as="li" className="gap-3 max-w-fit">
 					<NextLink className="flex justify-start items-center gap-1" href="/">
-						<img src="favicon.svg" alt="Jobba Logo" className="h-20 w-20 mt-8" />
+						<div>
+							<p className="text-md font-bold text-inherit">jobba.help</p>
+						</div>
 					</NextLink>
 				</NavbarBrand>
 			</NavbarContent>
