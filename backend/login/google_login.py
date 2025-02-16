@@ -20,7 +20,6 @@ router = APIRouter()
 
 @router.get("/login")
 async def login(request: Request, background_tasks: BackgroundTasks):
-    from main import fetch_emails
     """Handles Google OAuth2 login and authorization code exchange."""
     from main import fetch_emails  # Move the import here to avoid circular import
     

@@ -97,38 +97,6 @@ async def logout(request: Request, response: RedirectResponse):
     return RedirectResponse("/", status_code=303)
 
 
-def fetch_emails(user: AuthenticatedUser) -> None:
-    global api_call_finished
-    logger.info("user_id:%s fetch_emails", user.user_id)
-    service = build("gmail", "v1", credentials=user.creds)
-    messages = get_email_ids(query=QUERY_APPLIED_EMAIL_FILTER, gmail_instance=service)
-    messages = get_email_ids(query=QUERY_APPLIED_EMAIL_FILTER, gmail_instance=service)
-    # Directory to save the emails
-    os.makedirs(user.filepath, exist_ok=True)
-
-    for message in messages:
-        message_data = {}
-        # (email_subject, email_from, email_domain, company_name, email_dt)
-        msg_id = message["id"]
-        msg = get_email(message_id=msg_id, gmail_instance=service)
-        if msg:
-            result = process_email(msg["text_content"])
-            result = process_email(msg["text_content"])
-            if not isinstance(result, str) and result:
-                logger.info("user_id:%s  successfully extracted email", user.user_id)
-            else:
-                result = {}
-                logger.info("user_id:%s failed to extract email", user.user_id)
-            message_data["company_name"] = [result.get("company_name", "")]
-            message_data["application_status"] = [result.get("application_status", "")]
-            message_data["received_at"] = [msg.get("date", "")]
-            message_data["subject"] = [msg.get("subject", "")]
-            message_data["from"] = [msg.get("from", "")]
-            # Exporting the email data to a CSV file
-            export_to_csv(user.filepath, user.user_id, message_data)
-    api_call_finished = True
-
-
 @app.get("/success", response_class=HTMLResponse)
 def success(request: Request, user_id: str = Depends(validate_session)):
     if not user_id:
@@ -143,9 +111,7 @@ def fetch_emails(user: AuthenticatedUser) -> None:
     global api_call_finished
     try:
         logger.info("user_id:%s fetch_emails", user.user_id)
-
         service = build("gmail", "v1", credentials=user.creds)
-
         messages = get_email_ids(query=QUERY_APPLIED_EMAIL_FILTER, gmail_instance=service)
         # Directory to save the emails
         os.makedirs(user.filepath, exist_ok=True)
