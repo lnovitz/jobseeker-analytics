@@ -15,9 +15,9 @@ import RedirectUrl from "@/utils/navbar-utils";
 export const Navbar = () => {
 	const pathname = usePathname();
 	const router = useRouter();
-
+	const envType = process.env.ENV!;
 	const handleGoogleLogin = () => {
-		router.push(`${RedirectUrl("PROD")}/login`);
+		router.push(`${RedirectUrl(envType)}/login`);
 	};
 
 	const handleGoogleLogout = async () => {

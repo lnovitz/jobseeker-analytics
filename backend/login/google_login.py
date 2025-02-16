@@ -60,7 +60,7 @@ async def login(request: Request, background_tasks: BackgroundTasks):
         request.session["token_expiry"] = token_expiry
         request.session["user_id"] = user.user_id
 
-        response = RedirectResponse(url="/processing", status_code=303)
+        response = RedirectResponse(url="http://localhost:3000/processing", status_code=303)
         response.set_cookie(
             key="Authorization", value=session_id, secure=True, httponly=True
         )
