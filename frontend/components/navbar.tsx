@@ -8,28 +8,28 @@ import NextLink from "next/link";
 import { siteConfig } from "@/config/site";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { GithubIcon, HeartFilledIcon, GoogleIcon } from "@/components/icons";
+import { usePathname } from "next/navigation";
 
 export const Navbar = () => {
+	const pathname = usePathname();
 	const router = useRouter();
 
 	const handleGoogleLogin = () => {
 		router.push("http://localhost:8000/login"); // Update with your FastAPI server URL
 	};
 
+	const handleGoogleLogout = async () => {
+		router.push("http://localhost:8000/logout");
+	  };
+
 	return (
 		<HeroUINavbar maxWidth="xl" position="sticky">
 			<NavbarContent className="basis-1/5 sm:basis-full" justify="start">
 				<NavbarBrand as="li" className="gap-3 max-w-fit">
 					<NextLink className="flex justify-start items-center gap-1" href="/">
-						<p className="text-xl font-bold text-inherit">JOBBA</p>
+						<img src="favicon.svg" alt="Jobba Logo" className="h-20 w-20 mt-8" />
 					</NextLink>
 				</NavbarBrand>
-				<NextLink className="flex justify-start items-center gap-1" href="/dashboard">
-					<p className="text-l font-bold text-inherit">Dashboard</p>
-				</NextLink>
-				<NextLink className="flex justify-start items-center gap-1" href="/testpage">
-					<p className="text-l font-bold text-inherit">Test Page</p>
-				</NextLink>
 			</NavbarContent>
 
 			<NavbarContent className="hidden sm:flex basis-1/5 sm:basis-full" justify="end">
@@ -60,17 +60,33 @@ export const Navbar = () => {
 				<ThemeSwitch />
 				<NavbarMenuToggle />
 			</NavbarContent>
-
+			
+			{pathname === "/" && (
+				<NavbarItem className="hidden md:flex">
+					<Button
+						className="text-sm font-normal text-default-600 bg-default-100"
+						startContent={<GoogleIcon className="text-danger" />}
+						variant="flat"
+						onClick={handleGoogleLogin}
+					>
+						Login with Google
+					</Button>
+				</NavbarItem>
+			)}
+			
+			{/* Add for processing page too */}
+			{pathname === "/success" && (
 			<NavbarItem className="hidden md:flex">
-				<Button
-					className="text-sm font-normal text-default-600 bg-default-100"
-					startContent={<GoogleIcon className="text-danger" />}
-					variant="flat"
-					onClick={handleGoogleLogin}
-				>
-					Login with Google
-				</Button>
-			</NavbarItem>
+					<Button
+						className="text-sm font-normal text-default-600 bg-default-100"
+						startContent={<GoogleIcon className="text-danger" />}
+						variant="flat"
+						onClick={handleGoogleLogout}
+					>
+						Logout
+					</Button>
+				</NavbarItem>
+			)}
 		</HeroUINavbar>
 	);
 };
