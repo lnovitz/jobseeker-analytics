@@ -17,6 +17,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Create .env file
+        uses: SpicyPizza/create-envfile@v2.0.3
+        with:
+          envkey_ENV_TYPE: dev
+          directory: frontend
+
       - name: Setup Node.js 20
         uses: actions/setup-node@v4
         with:
