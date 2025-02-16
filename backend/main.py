@@ -3,7 +3,7 @@ import logging
 import os
 
 from fastapi import FastAPI, Request, Depends
-from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
@@ -68,16 +68,19 @@ async def root(request: Request, response_class=HTMLResponse):
 async def processing(request: Request, user_id: str = Depends(validate_session)):
     logging.info("user_id: %s processing", user_id)
     global api_call_finished
+    
     if not user_id:
         logger.info("user_id: not found, redirecting to login")
         return RedirectResponse("/logout", status_code=303)
+
     if api_call_finished:
         logger.info("user_id: %s processing complete", user_id)
-        return RedirectResponse("/success", status_code=303)
+        return JSONResponse(
+            content={"message": "Processing complete", "redirect_url": "http://localhost:3000/success"}
+        )
     else:
         logger.info("user_id: %s processing not complete for file", user_id)
-        # Show a message that the job is still processing
-        return templates.TemplateResponse("processing.html", {"request": request})
+        return JSONResponse(content={"message": "Processing in progress"})
 
 
 @app.get("/download-file")
