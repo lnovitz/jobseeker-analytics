@@ -12,6 +12,7 @@
 		"check": "prettier --check . && eslint . --ext .ts,.tsx -c .eslintrc.json"
 	},
 	"dependencies": {
+		"@heroicons/react": "^2.2.0",
 		"@heroui/react": "^2.6.14",
 		"@heroui/system": "2.4.6",
 		"@heroui/theme": "2.4.5",
