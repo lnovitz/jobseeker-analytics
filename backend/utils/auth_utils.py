@@ -76,4 +76,4 @@ class AuthenticatedUser:
             proxy_user_id = str(uuid.uuid4())
             logger.error("Could not verify ID token. Using proxy ID: %s", proxy_user_id)
             return proxy_user_id  # Generate a random ID
-            return proxy_user_id  # Generate a random ID
+      

@@ -6,8 +6,9 @@
 *.csv
 *.txt
 *.json
-.venv/
+venv/
 __pycache__/
+.history/
 
 # Debug logs
 npm-debug.log*
@@ -24,7 +25,7 @@ backend/venv*
 backend/.mypy_cache/
 backend/.pytest_cache/
 backend/.env
-backend/credentials.json
+credentials.json*
 backend/token.json
 backend/*.db
 backend/*.csv

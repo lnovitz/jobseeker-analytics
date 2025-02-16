@@ -51,12 +51,7 @@ def process_email(email_text):
                     .replace("'", '"')
                     .strip()
                 )
-                cleaned_response_json = (
-                    response_json.replace("json", "")
-                    .replace("`", "")
-                    .replace("'", '"')
-                    .strip()
-                )
+
                 logger.info("Cleaned response: %s", cleaned_response_json)
                 return json.loads(cleaned_response_json)
             else:
