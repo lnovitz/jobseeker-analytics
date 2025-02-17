@@ -27,6 +27,7 @@ from login.google_login import router as google_login_router
 
 app = FastAPI()
 settings = get_settings()
+APP_URL = settings.APP_URL
 app.add_middleware(SessionMiddleware, secret_key=settings.COOKIE_SECRET)
 # prevent error during testing
 static_dir = "static"
@@ -76,7 +77,7 @@ async def processing(request: Request, user_id: str = Depends(validate_session))
     if api_call_finished:
         logger.info("user_id: %s processing complete", user_id)
         return JSONResponse(
-            content={"message": "Processing complete", "redirect_url": "http://localhost:3000/success"}
+            content={"message": "Processing complete", "redirect_url": f"{APP_URL}/success"}
         )
     else:
         logger.info("user_id: %s processing not complete for file", user_id)

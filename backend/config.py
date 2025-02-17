@@ -22,6 +22,8 @@ class Settings(BaseSettings):
     DB_PORT: int
     CLIENT_SECRETS_FILE: str = "credentials.json"
     ENV: str = "dev"
+    SERVER_URL: str
+    APP_URL: str
 
     @field_validator("GOOGLE_SCOPES", mode="before")
     @classmethod

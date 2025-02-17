@@ -4,24 +4,24 @@ import { Navbar as HeroUINavbar, NavbarContent, NavbarMenuToggle, NavbarBrand, N
 import { Button, Link } from "@heroui/react";
 import { useRouter } from "next/navigation";
 import NextLink from "next/link";
+import { usePathname } from "next/navigation";
 
 import { siteConfig } from "@/config/site";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { GithubIcon, HeartFilledIcon, GoogleIcon } from "@/components/icons";
 
-import { usePathname } from "next/navigation";
-import RedirectUrl from "@/utils/navbar-utils";
-
 export const Navbar = () => {
 	const pathname = usePathname();
 	const router = useRouter();
-	const envType = process.env.ENV!;
+
+	const apiUrl = process.env.NEXT_PUBLIC_API_URL!;
+
 	const handleGoogleLogin = () => {
-		router.push(`${RedirectUrl(envType)}/login`);
+		router.push(`${apiUrl}/login`);
 	};
 
 	const handleGoogleLogout = async () => {
-		router.push("http://localhost:8000/logout");
+		router.push(`${apiUrl}/logout`);
 	};
 
 	return (
