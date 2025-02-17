@@ -41,6 +41,7 @@ origins = [
     "http://127.0.0.1:3000",
     "https://www.jobba.help/",
     "https://jobseeker-analytics.onrender.com/",
+    "https://jobba.onrender.com",
 ]
 
 app.add_middleware(

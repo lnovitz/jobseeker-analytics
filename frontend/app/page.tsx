@@ -8,9 +8,10 @@ import { GoogleIcon } from "@/components/icons";
 
 const GoogleLogin = () => {
 	const router = useRouter();
+	const apiUrl = process.env.NEXT_PUBLIC_API_URL!;
 
 	const handleGoogleLogin = () => {
-		router.push("http://localhost:8000/login");
+		router.push(`${apiUrl}/login`);
 	};
 
 	return (
