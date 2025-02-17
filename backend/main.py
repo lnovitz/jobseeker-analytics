@@ -71,9 +71,9 @@ async def processing(request: Request, user_id: str = Depends(validate_session))
     logging.info("user_id: %s processing", user_id)
     global api_call_finished
     
-    if not user_id:
-        logger.info("user_id: not found, redirecting to login")
-        return RedirectResponse("/logout", status_code=303)
+    # if not user_id:
+    #     logger.info("user_id: not found, redirecting to login")
+    #     return RedirectResponse("/logout", status_code=303)
 
     if api_call_finished:
         logger.info("user_id: %s processing complete", user_id)
