@@ -3,18 +3,25 @@
 import { Navbar as HeroUINavbar, NavbarContent, NavbarMenuToggle, NavbarBrand, NavbarItem } from "@heroui/react";
 import { Button, Link } from "@heroui/react";
 import { useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import NextLink from "next/link";
 
 import { siteConfig } from "@/config/site";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { GithubIcon, HeartFilledIcon, GoogleIcon } from "@/components/icons";
-import RedirectUrl from "@/utils/navbar-utils";
 
 export const Navbar = () => {
+	const pathname = usePathname();
 	const router = useRouter();
 
+	const apiUrl = process.env.NEXT_PUBLIC_API_URL!;
+
 	const handleGoogleLogin = () => {
-		router.push(`${RedirectUrl("PROD")}/login`);
+		router.push(`${apiUrl}/login`);
+	};
+
+	const handleGoogleLogout = async () => {
+		router.push(`${apiUrl}/logout`);
 	};
 
 	return (
@@ -23,7 +30,9 @@ export const Navbar = () => {
 				<NavbarBrand as="li" className="gap-3 max-w-fit">
 					<NextLink className="flex justify-start items-center gap-1" href="/">
 						<div>
-							<p className="text-md font-bold text-inherit">jobba.help</p>
+							<p className="text-md font-bold text-inherit" data-testid="Logo">
+								jobba.help
+							</p>
 						</div>
 					</NextLink>
 				</NavbarBrand>
@@ -41,6 +50,7 @@ export const Navbar = () => {
 						isExternal
 						as={Link}
 						className="text-sm font-normal text-default-600 bg-default-100"
+						data-testid="Sponsor"
 						href={siteConfig.links.sponsor}
 						startContent={<HeartFilledIcon className="text-danger" />}
 						variant="flat"
@@ -58,16 +68,33 @@ export const Navbar = () => {
 				<NavbarMenuToggle />
 			</NavbarContent>
 
-			<NavbarItem className="hidden md:flex">
-				<Button
-					className="text-sm font-normal text-default-600 bg-default-100"
-					startContent={<GoogleIcon className="text-danger" />}
-					variant="flat"
-					onClick={handleGoogleLogin}
-				>
-					Login with Google
-				</Button>
-			</NavbarItem>
+			{pathname === "/" && (
+				<NavbarItem className="hidden md:flex" data-testid="GoogleLogin">
+					<Button
+						className="text-sm font-normal text-default-600 bg-default-100"
+						data-testid="GoogleLogin"
+						startContent={<GoogleIcon className="text-danger" />}
+						variant="flat"
+						onClick={handleGoogleLogin}
+					>
+						Login with Google
+					</Button>
+				</NavbarItem>
+			)}
+
+			{/* Add for processing page too */}
+			{pathname === "/success" && (
+				<NavbarItem className="hidden md:flex">
+					<Button
+						className="text-sm font-normal text-default-600 bg-default-100"
+						startContent={<GoogleIcon className="text-danger" />}
+						variant="flat"
+						onClick={handleGoogleLogout}
+					>
+						Logout
+					</Button>
+				</NavbarItem>
+			)}
 		</HeroUINavbar>
 	);
 };
