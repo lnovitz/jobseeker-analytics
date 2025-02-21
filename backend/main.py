@@ -113,14 +113,15 @@ def fetch_emails(user: AuthenticatedUser) -> None:
         message_data = {}
         # (email_subject, email_from, email_domain, company_name, email_dt)
         msg_id = message["id"]
+        logger.info(f"user_id:{user.user_id} begin processing for email {idx+1} of {len(messages)} with id {msg_id}")
         msg = get_email(message_id=msg_id, gmail_instance=service)
         if msg:
             result = process_email(msg["text_content"])
             if not isinstance(result, str) and result:
-                logger.info(f"user_id:{user.user_id} successfully extracted email {idx} of {len(messages)} with id {msg_id}")
+                logger.info(f"user_id:{user.user_id} successfully extracted email {idx+1} of {len(messages)} with id {msg_id}")
             else:
                 result = {}
-                logger.warning(f"user_id:{user.user_id} failed to extract email {idx} of {len(messages)} with id {msg_id}")
+                logger.warning(f"user_id:{user.user_id} failed to extract email {idx+1} of {len(messages)} with id {msg_id}")
             message_data["company_name"] = [result.get("company_name", "")]
             message_data["application_status"] = [result.get("application_status", "")]
             message_data["received_at"] = [msg.get("date", "")]

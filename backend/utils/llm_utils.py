@@ -72,7 +72,7 @@ def process_email(email_text):
                 )
                 time.sleep(delay)
             else:
-                logger.error(f"Error processing email: {e}")
+                logger.exception(f"Error processing email: {e}")
                 return None
     logger.error(f"Failed to process email after {retries} attempts.")
     return None
