@@ -26,7 +26,6 @@ from session.session_layer import validate_session
 # Import Google login routes
 from login.google_login import router as google_login_router
 
-
 app = FastAPI()
 settings = get_settings()
 app.add_middleware(SessionMiddleware, secret_key=settings.COOKIE_SECRET)
@@ -100,11 +99,17 @@ async def logout(request: Request, response: RedirectResponse):
 
 def fetch_emails(user: AuthenticatedUser) -> None:
     global api_call_finished
+    
+    api_call_finished = False # this is helpful if the user applies for a new job and wants to rerun the analysis during the same session
     logger.info("user_id:%s fetch_emails", user.user_id)
     service = build("gmail", "v1", credentials=user.creds)
     messages = get_email_ids(query=QUERY_APPLIED_EMAIL_FILTER, gmail_instance=service)
+    
     # Directory to save the emails
     os.makedirs(user.filepath, exist_ok=True)
+    # if we're developing, flush the emails output instead of appending to it. 
+    if settings.ENV == "dev" and os.path.isfile(os.path.join(user.filepath, "emails.csv")):
+        os.remove(os.path.join(user.filepath, "emails.csv"))
     
     if len(messages) > 1000:
         logger.warning(f"**************detected {len(messages)} that passed the filter!")

@@ -5,6 +5,6 @@ services:
     ports:
       - "8000:8000"  # Map host port 8000 to container port 8000
     volumes:
-      - ./backend:/app  # Mount backend directory for live code updates
+      - ./backend:/app # Mount backend directory for live code updates
     env_file: "./backend/.env"  # Use the .env file inside backend
     restart: always  # Restart container if it crashes
