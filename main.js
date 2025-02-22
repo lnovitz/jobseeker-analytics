@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require("electron");
+const { app, BrowserWindow, ipcMain, Menu } = require("electron");
 const { autoUpdater } = require("electron-updater");
 const path = require("path");
 const Store = require("electron-store");
@@ -7,6 +7,74 @@ const store = new Store();
 
 let mainWindow;
 let db;
+
+// Create application menu
+function createMenu() {
+  const isMac = process.platform === "darwin";
+  const template = [
+    ...(isMac
+      ? [
+          {
+            label: app.name,
+            submenu: [
+              { role: "about" },
+              { type: "separator" },
+              { role: "services" },
+              { type: "separator" },
+              { role: "hide" },
+              { role: "hideOthers" },
+              { role: "unhide" },
+              { type: "separator" },
+              {
+                label: "Force Quit",
+                accelerator: "CmdOrCtrl+Q",
+                click: () => {
+                  if (db) {
+                    db.close();
+                  }
+                  app.quit();
+                },
+              },
+            ],
+          },
+        ]
+      : []),
+    {
+      label: "File",
+      submenu: [
+        isMac
+          ? { role: "close" }
+          : {
+              label: "Force Quit",
+              accelerator: "Alt+F4",
+              click: () => {
+                if (db) {
+                  db.close();
+                }
+                app.quit();
+              },
+            },
+      ],
+    },
+    {
+      label: "View",
+      submenu: [
+        { role: "reload" },
+        { role: "forceReload" },
+        { role: "toggleDevTools" },
+        { type: "separator" },
+        { role: "resetZoom" },
+        { role: "zoomIn" },
+        { role: "zoomOut" },
+        { type: "separator" },
+        { role: "togglefullscreen" },
+      ],
+    },
+  ];
+
+  const menu = Menu.buildFromTemplate(template);
+  Menu.setApplicationMenu(menu);
+}
 
 // Initialize auto-updater
 function initializeAutoUpdater() {
@@ -79,6 +147,14 @@ app.whenReady().then(() => {
   initializeDatabase();
   initializeAutoUpdater();
   createWindow();
+  createMenu();
+});
+
+// Add force quit handler for Windows/Linux
+app.on("before-quit", () => {
+  if (db) {
+    db.close();
+  }
 });
 
 app.on("window-all-closed", () => {
@@ -150,13 +226,29 @@ ipcMain.on("fetch-emails", async (event) => {
         return;
       }
 
-      // Calculate date for 1 week ago
+      // Calculate date for 1 week ago and format it properly
       const lastWeek = new Date();
       lastWeek.setDate(lastWeek.getDate() - 7);
 
-      const fetch = imap.search(["SINCE", lastWeek], (err, results) => {
+      // Format date as DD-Mon-YYYY
+      // Example: "1-Jan-2024"
+      const formattedDate = lastWeek
+        .toLocaleString("en-US", {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+        })
+        .replace(/,/g, "");
+
+      imap.search([["SINCE", formattedDate]], (err, results) => {
         if (err) {
           event.reply("emails-error", err.message);
+          return;
+        }
+
+        if (!results || results.length === 0) {
+          event.reply("emails-fetched", []);
+          imap.end();
           return;
         }
 
@@ -172,7 +264,7 @@ ipcMain.on("fetch-emails", async (event) => {
               buffer += chunk.toString("utf8");
             });
             stream.once("end", () => {
-              const header = require("imap").parseHeader(buffer);
+              const header = require("node-imap").parseHeader(buffer);
               const email = {
                 from: header.from?.[0],
                 subject: header.subject?.[0],

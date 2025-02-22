@@ -92,113 +92,83 @@ You can also always email us at [help@jobba.help](mailto:help@jobba.help).
 
 # Email Client
 
-A simple desktop email client that helps you view and store your recent emails.
+A simple and user-friendly email client built with Electron.
 
-## ⚡ Quick Start
+## Prerequisites
 
-**New to Email Client?** Get started in minutes with our [Quick Start Guide](docs/QUICK-START.md)!
+- Node.js 20.11.1 or later (LTS version recommended)
+- npm (comes with Node.js)
+- Git
 
-1. Download for your system:
-   - [Windows Installer](https://github.com/yourusername/email-client/releases/latest/download/Email-Client-Setup.exe)
-   - [Mac App](https://github.com/yourusername/email-client/releases/latest/download/Email-Client.dmg)
-   - [Linux AppImage](https://github.com/yourusername/email-client/releases/latest/download/email-client.AppImage)
+## Installation
 
-2. Install and run
-3. Select your email provider
-4. Enter your credentials
-5. Start viewing your emails!
+1. If you use nvm (Node Version Manager), simply run:
+   ```bash
+   nvm install
+   nvm use
+   ```
+   This will automatically use the correct Node.js version specified in `.nvmrc`.
 
-Need more help? Check out our:
-- 📚 [Full Installation Guide](docs/INSTALLATION.md)
-- ❓ [FAQ](docs/FAQ.md)
-- 💬 [Discord Community](https://discord.gg/your-server)
+   If you don't use nvm, please ensure you have Node.js 20.11.1 or later installed.
 
-## Download and Install
+2. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/email-client.git
+   cd email-client
+   ```
 
-### Windows Users
-1. Download the latest `Email-Client-Setup.exe` from the [Releases page](https://github.com/yourusername/email-client/releases)
-2. Double-click the downloaded file
-3. Follow the installation wizard
-4. Once installed, find "Email Client" in your Start menu
+3. Install dependencies:
+   ```bash
+   npm install
+   ```
+   This will automatically install all dependencies and rebuild native modules for Electron.
 
-### Mac Users
-1. Download the latest `Email-Client.dmg` from the [Releases page](https://github.com/yourusername/email-client/releases)
-2. Double-click the downloaded file
-3. Drag the Email Client app to your Applications folder
-4. Find "Email Client" in your Applications folder or Launchpad
+4. Start the application:
+   ```bash
+   npm start
+   ```
 
-### Linux Users
-1. Download the latest `email-client.AppImage` from the [Releases page](https://github.com/yourusername/email-client/releases)
-2. Right-click the downloaded file and select "Properties"
-3. In the Permissions tab, check "Allow executing file as program"
-4. Double-click the file to run
+## Building the Application
 
-## Setting Up Your Email
+To build the application for your platform:
 
-### For Gmail Users
-1. Select "Gmail" from the provider dropdown
-2. Enter your Gmail address
-3. For the password, you'll need to use an App Password:
-   - Go to your [Google Account Security Settings](https://myaccount.google.com/security)
-   - Enable 2-Step Verification if you haven't already
-   - Go to App Passwords
-   - Select "Mail" and your device type
-   - Click Generate
-   - Use the 16-character password that appears
+```bash
+# For all platforms
+npm run build
 
-### For Outlook Users
-1. Select "Outlook/Hotmail" from the provider dropdown
-2. Enter your full email address
-3. Use your regular Outlook password
-4. If connection fails:
-   - Go to Outlook.com
-   - Settings → View all Outlook settings
-   - Mail → Sync email
-   - Make sure IMAP is enabled
+# For specific platforms
+npm run build:mac    # macOS
+npm run build:win    # Windows
+npm run build:linux  # Linux
+```
 
-### For Yahoo Users
-1. Select "Yahoo Mail" from the provider dropdown
-2. Enter your Yahoo email address
-3. For the password:
-   - Go to Yahoo Account Security
-   - Generate app password
-   - Use that password instead of your regular Yahoo password
-
-### For Other Email Providers
-1. Select "Other Provider" from the dropdown
-2. Enter your email address
-3. Enter your password
-4. You'll need to enter your provider's IMAP settings:
-   - IMAP Host (e.g., mail.provider.com)
-   - IMAP Port (usually 993)
-   - TLS should typically be enabled
+The built applications will be available in the `dist` directory.
 
 ## Features
-- Connect to your email account
-- View emails from the last week
-- Automatically store email information locally
-- View history of previously fetched emails
+
+- Simple and intuitive email interface
+- Support for IMAP email accounts
+- Local email storage using SQLite
+- Automatic updates
+- Cross-platform support (macOS, Windows, Linux)
+
+## Development
+
+- `npm start` - Start the application in development mode
+- `npm run build` - Build the application for distribution
+- `npm run publish` - Build and publish the application
 
 ## Troubleshooting
 
-### Connection Issues
-- Make sure you have an internet connection
-- Verify your email and password are correct
-- For Gmail: Make sure you're using an App Password
-- For Outlook: Ensure IMAP access is enabled
-- Check if your antivirus or firewall is blocking the connection
+If you encounter any issues with native modules, try:
 
-### App Won't Start
-- Try uninstalling and reinstalling the app
-- Make sure your computer meets the minimum requirements
-- Check if your antivirus is blocking the app
+1. Delete the `node_modules` folder
+2. Run `npm install` again
+3. If issues persist, manually rebuild native modules:
+   ```bash
+   ./node_modules/.bin/electron-rebuild
+   ```
 
-### Still Having Problems?
-Contact us with:
-- Your operating system (Windows/Mac/Linux)
-- Your email provider
-- The error message you're seeing
-- Steps to reproduce the problem
+## License
 
-## For Developers
-If you're a developer interested in building the app from source, see [CONTRIBUTING.md](CONTRIBUTING.md) for instructions.
+ISC
