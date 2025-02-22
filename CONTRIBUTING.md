@@ -33,7 +33,7 @@ This Code of Conduct applies to both within project spaces and in public spaces 
 
 ## How Can I Contribute?
 
-This project uses **Google OAuth** for authentication. To run the app locally, you’ll need to configure your own Google API credentials.  
+This project uses **Google OAuth** for authentication. To run the app locally, you'll need to configure your own Google API credentials.  
 
 ### Clone the repo
 1. On Windows: We recommend that you use WSL2. [Installation instructions here](https://learn.microsoft.com/en-us/windows/wsl/). 
@@ -196,3 +196,109 @@ Bugs are tracked as [GitHub issues](https://docs.github.com/en/issues/tracking-y
 - Describe the behavior you observed after following the steps.
 - Include screenshots and/or animated GIFs when possible.
 - If the problem wasn't triggered by a specific action, describe what you were doing before the problem occurred.
+
+# Contributing to Email Client
+
+## Development Setup
+
+### Prerequisites
+- [Node.js](https://nodejs.org/) (version 14 or higher)
+- npm (comes with Node.js)
+- Git
+
+### Building from Source
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/email-client.git
+   cd email-client
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Start the development version:
+   ```bash
+   npm start
+   ```
+
+### Building Distributable Versions
+
+To create installable packages:
+
+#### For Windows:
+```bash
+npm run build:win
+```
+This creates:
+- `dist/Email-Client-Setup.exe` (installer)
+- `dist/Email-Client.exe` (portable version)
+
+#### For Mac:
+```bash
+npm run build:mac
+```
+This creates:
+- `dist/Email-Client.dmg` (installer)
+- `dist/Email-Client.app` (application)
+
+#### For Linux:
+```bash
+npm run build:linux
+```
+This creates:
+- `dist/email-client.AppImage` (portable)
+- `dist/email-client.deb` (Debian/Ubuntu installer)
+
+The distributable files will be created in the `dist` directory.
+
+## Project Structure
+
+```
+email-client/
+├── main.js           # Main electron process
+├── index.html        # Main application window
+├── package.json      # Project configuration
+└── README.md         # Documentation
+```
+
+## Making Changes
+
+1. Create a new branch for your feature:
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+
+2. Make your changes and test thoroughly
+
+3. Commit your changes:
+   ```bash
+   git add .
+   git commit -m "Description of your changes"
+   ```
+
+4. Push to your fork and submit a pull request
+
+## Testing
+
+Before submitting changes:
+1. Test the app with different email providers
+2. Ensure the app works on your operating system
+3. Check that all features still work:
+   - Email connection
+   - Email fetching
+   - Local storage
+   - UI responsiveness
+
+## Creating a Release
+
+1. Update version in package.json
+2. Build for all platforms:
+   ```bash
+   npm run build
+   ```
+3. Test the built versions
+4. Create a new release on GitHub
+5. Upload the built files from the `dist` directory

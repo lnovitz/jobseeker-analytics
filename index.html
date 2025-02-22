@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Email Client</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .setup-form {
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #666;
+        }
+
+        input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        .email-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .email-table th, .email-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .email-table th {
+            background-color: #f8f8f8;
+            color: #333;
+        }
+
+        .email-table tr:hover {
+            background-color: #f5f5f5;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        #status-message {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+
+        .success {
+            background-color: #dff0d8;
+            color: #3c763d;
+        }
+
+        .error {
+            background-color: #f2dede;
+            color: #a94442;
+        }
+
+        .tab-container {
+            margin-bottom: 20px;
+        }
+        
+        .tab-button {
+            background-color: #f8f8f8;
+            border: none;
+            padding: 10px 20px;
+            margin-right: 10px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        
+        .tab-button.active {
+            background-color: #4CAF50;
+            color: white;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+
+        .provider-select {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f8f8;
+            border-radius: 4px;
+        }
+
+        .provider-select select {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .help-text {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+            margin-bottom: 10px;
+        }
+
+        .important-note {
+            background-color: #fff3cd;
+            border: 1px solid #ffeeba;
+            color: #856404;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+
+        .setup-instructions {
+            background-color: #e9ecef;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+
+        .setup-instructions h2 {
+            margin-top: 0;
+            color: #333;
+            font-size: 18px;
+        }
+
+        .setup-instructions ol {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+
+        .setup-instructions li {
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Email Client Setup</h1>
+
+        <div class="setup-instructions">
+            <h2>📧 How to Connect Your Email</h2>
+            <ol>
+                <li>Select your email provider from the dropdown menu below</li>
+                <li>Enter your email address</li>
+                <li>For Gmail:
+                    <ul>
+                        <li>You'll need to use an "App Password" instead of your regular password</li>
+                        <li>Go to your Google Account → Security → 2-Step Verification → App Passwords</li>
+                        <li>Create a new app password for "Mail" and use it here</li>
+                    </ul>
+                </li>
+                <li>For Outlook/Hotmail:
+                    <ul>
+                        <li>Use your regular email password</li>
+                        <li>If it doesn't work, you may need to enable "IMAP access" in your Outlook settings</li>
+                    </ul>
+                </li>
+                <li>For Yahoo:
+                    <ul>
+                        <li>You'll need to generate an "App Password"</li>
+                        <li>Go to Yahoo Account Security → Generate app password</li>
+                    </ul>
+                </li>
+            </ol>
+        </div>
+        
+        <div id="setup-section" class="setup-form">
+            <div class="provider-select">
+                <label for="email-provider">Select Your Email Provider:</label>
+                <select id="email-provider" onchange="updateProviderSettings()">
+                    <option value="">-- Select Provider --</option>
+                    <option value="gmail">Gmail</option>
+                    <option value="outlook">Outlook/Hotmail</option>
+                    <option value="yahoo">Yahoo Mail</option>
+                    <option value="other">Other Provider</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email Address:</label>
+                <input type="email" id="email" required placeholder="your.name@example.com">
+                <div class="help-text">Enter your full email address</div>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" required>
+                <div class="help-text password-help">Enter your email password or app password</div>
+            </div>
+
+            <div id="custom-settings" class="hidden">
+                <div class="form-group">
+                    <label for="imapHost">IMAP Host:</label>
+                    <input type="text" id="imapHost" placeholder="e.g., imap.gmail.com">
+                    <div class="help-text">Your email provider's IMAP server address</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="imapPort">IMAP Port:</label>
+                    <input type="number" id="imapPort" value="993">
+                    <div class="help-text">Usually 993 for secure connections</div>
+                </div>
+
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="useTLS" checked> Use TLS (Recommended)
+                    </label>
+                </div>
+            </div>
+
+            <div class="important-note">
+                <strong>Important:</strong> For Gmail users, you must use an App Password. 
+                <a href="https://support.google.com/accounts/answer/185833" target="_blank">Learn how to create one</a>
+            </div>
+
+            <button onclick="saveConfig()">Connect Email</button>
+        </div>
+
+        <div id="status-message"></div>
+
+        <div id="email-section" class="hidden">
+            <div class="tab-container">
+                <button class="tab-button active" onclick="switchTab('fetch')">Fetch New Emails</button>
+                <button class="tab-button" onclick="switchTab('stored')">View Stored Emails</button>
+            </div>
+
+            <div id="fetch-tab" class="tab-content active">
+                <button onclick="fetchEmails()">Fetch Recent Emails</button>
+                <table class="email-table">
+                    <thead>
+                        <tr>
+                            <th>From</th>
+                            <th>Subject</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="email-list">
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="stored-tab" class="tab-content">
+                <button onclick="loadStoredEmails()">Load Stored Emails</button>
+                <table class="email-table">
+                    <thead>
+                        <tr>
+                            <th>From</th>
+                            <th>Subject</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stored-email-list">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { ipcRenderer } = require('electron');
+
+        const providerSettings = {
+            gmail: {
+                host: 'imap.gmail.com',
+                port: 993,
+                tls: true,
+                passwordHelp: 'Use an App Password from your Google Account settings'
+            },
+            outlook: {
+                host: 'outlook.office365.com',
+                port: 993,
+                tls: true,
+                passwordHelp: 'Use your regular Outlook password'
+            },
+            yahoo: {
+                host: 'imap.mail.yahoo.com',
+                port: 993,
+                tls: true,
+                passwordHelp: 'Use an App Password from Yahoo Account Security'
+            }
+        };
+
+        function updateProviderSettings() {
+            const provider = document.getElementById('email-provider').value;
+            const customSettings = document.getElementById('custom-settings');
+            const passwordHelp = document.querySelector('.password-help');
+            
+            if (provider === 'other') {
+                customSettings.classList.remove('hidden');
+                passwordHelp.textContent = 'Enter your email password';
+                return;
+            }
+
+            customSettings.classList.add('hidden');
+            
+            if (provider in providerSettings) {
+                const settings = providerSettings[provider];
+                document.getElementById('imapHost').value = settings.host;
+                document.getElementById('imapPort').value = settings.port;
+                document.getElementById('useTLS').checked = settings.tls;
+                passwordHelp.textContent = settings.passwordHelp;
+            }
+        }
+
+        function saveConfig() {
+            const config = {
+                email: document.getElementById('email').value,
+                password: document.getElementById('password').value,
+                imapHost: document.getElementById('imapHost').value,
+                imapPort: parseInt(document.getElementById('imapPort').value),
+                useTLS: document.getElementById('useTLS').checked
+            };
+
+            ipcRenderer.send('save-email-config', config);
+        }
+
+        function showStatus(message, isError = false) {
+            const statusDiv = document.getElementById('status-message');
+            statusDiv.textContent = message;
+            statusDiv.className = isError ? 'error' : 'success';
+        }
+
+        function fetchEmails() {
+            showStatus('Fetching emails...');
+            ipcRenderer.send('fetch-emails');
+        }
+
+        function displayEmails(emails) {
+            const tbody = document.getElementById('email-list');
+            tbody.innerHTML = '';
+            
+            emails.forEach(email => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${email.from}</td>
+                    <td>${email.subject}</td>
+                    <td>${new Date(email.date).toLocaleString()}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function switchTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('active');
+            });
+            document.querySelector(`[onclick="switchTab('${tabName}')"]`).classList.add('active');
+
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+
+            // Load stored emails when switching to stored tab
+            if (tabName === 'stored') {
+                loadStoredEmails();
+            }
+        }
+
+        function loadStoredEmails() {
+            showStatus('Loading stored emails...');
+            ipcRenderer.send('get-stored-emails');
+        }
+
+        function displayStoredEmails(emails) {
+            const tbody = document.getElementById('stored-email-list');
+            tbody.innerHTML = '';
+            
+            emails.forEach(email => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${email.sender}</td>
+                    <td>${email.subject}</td>
+                    <td>${new Date(email.timestamp).toLocaleString()}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // IPC listeners
+        ipcRenderer.on('config-saved', (event, success) => {
+            if (success) {
+                showStatus('Configuration saved successfully!');
+                document.getElementById('setup-section').classList.add('hidden');
+                document.getElementById('email-section').classList.remove('hidden');
+            }
+        });
+
+        ipcRenderer.on('emails-fetched', (event, emails) => {
+            showStatus(`Successfully fetched ${emails.length} emails`);
+            displayEmails(emails);
+        });
+
+        ipcRenderer.on('emails-error', (event, error) => {
+            showStatus(error, true);
+        });
+
+        ipcRenderer.on('stored-emails-fetched', (event, emails) => {
+            showStatus(`Loaded ${emails.length} stored emails`);
+            displayStoredEmails(emails);
+        });
+
+        ipcRenderer.on('stored-emails-error', (event, error) => {
+            showStatus(error, true);
+        });
+    </script>
+</body>
+</html> 

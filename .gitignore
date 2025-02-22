@@ -8,7 +8,7 @@
 *.json
 .venv/
 __pycache__/
-
+dist/
 # Ignore all .env files
 .env
 .env.*
