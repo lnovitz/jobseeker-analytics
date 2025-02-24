@@ -3,7 +3,6 @@ import email
 import logging
 import re
 from typing import Dict, Any
-import json
 
 from bs4 import BeautifulSoup
 from email_validator import validate_email, EmailNotValidError
@@ -409,8 +408,7 @@ def process_email_manual(msg):
         match = re.search(pattern, msg["subject"], re.IGNORECASE)
         if match:
             company_name = match.group(1).strip()
-            result_dict = {"company_name": company_name, "application_status": "no response"}
-            result = json.dumps(result_dict)
+            result = {"company_name": company_name, "application_status": "no response"}
 
     return result
 
