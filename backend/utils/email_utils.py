@@ -8,6 +8,7 @@ from ssl import SSLError
 from typing import Dict, Any
 
 import faulthandler
+
 faulthandler.enable()
 
 from bs4 import BeautifulSoup
@@ -17,11 +18,13 @@ from constants import GENERIC_ATS_DOMAINS
 
 logger = logging.getLogger(__name__)
 
+
 def clean_whitespace(text: str) -> str:
     """
     remove \n, \r, and \t from strings
     """
     return text.replace("\n", "").replace("\r", "").replace("\t", "")
+
 
 def is_automated_email(email: str) -> bool:
     """
@@ -50,6 +53,7 @@ def is_automated_email(email: str) -> bool:
 
     return False  # It's likely from a person
 
+
 def is_valid_email(email: str) -> bool:
     try:
         validate_email(email)
@@ -59,29 +63,31 @@ def is_valid_email(email: str) -> bool:
         print(str(e))
         return False
 
+
 def get_email_content(email_data: Dict[str, Any]) -> str:
     """
     parses html content of email data and appends it to text content and subject conent
 
     Note 1: linkedIn easy apply messages have *different* html and text_content, so we need to keep both
     Note 2: some automated emails only contain the information about hte company in the subject and
-        not the email body, so we need to append this to make sure the email processor gets to see it. 
-    
+        not the email body, so we need to append this to make sure the email processor gets to see it.
+
     """
     text_content = email_data["subject"]
 
     if email_data["text_content"]:
-        text_content += "\n" 
+        text_content += "\n"
         text_content += email_data["text_content"]
-        
+
     if email_data["html_content"]:
         soup = BeautifulSoup(email_data["html_content"], "html.parser")
         html_content = soup.get_text(separator=" ", strip=True)
 
-        text_content += "\n" 
+        text_content += "\n"
         text_content += html_content
 
     return text_content
+
 
 def get_email(message_id: str, gmail_instance=None):
     if gmail_instance:
@@ -144,7 +150,7 @@ def get_email(message_id: str, gmail_instance=None):
             email_data["text_content"] = get_email_content(email_data)
 
             return email_data
-        
+
         except Exception as e:
             logger.exception(f"Error retrieving email with id {message_id}: {e}")
             return {}
@@ -154,7 +160,12 @@ def get_email(message_id: str, gmail_instance=None):
 def get_email_with_retry_mechanism(message_id, gmail_instance, retries=5, delay=1):
     for attempt in range(retries):
         try:
-            message = gmail_instance.users().messages().get(userId="me", id=message_id, format='raw').execute()
+            message = (
+                gmail_instance.users()
+                .messages()
+                .get(userId="me", id=message_id, format="raw")
+                .execute()
+            )
             return message
         except (HttpError, SSLError) as e:
             logger.error(f"Error retrieving email with id {message_id}: {e}")
@@ -164,6 +175,7 @@ def get_email_with_retry_mechanism(message_id, gmail_instance, retries=5, delay=
                 delay *= 2  # Exponential backoff
             else:
                 raise
+
 
 def get_email_ids(query: tuple = None, gmail_instance=None):
     email_ids = []
