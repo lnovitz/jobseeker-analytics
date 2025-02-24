@@ -140,4 +140,5 @@ def test_process_email_manual():
     msg = {"subject": subject_line, "from": from_address}
     result = email_utils.process_email_manual(msg)
 
-    assert result == '{"company_name": "TestCompanyName", "application_status": "no response"}'
+    assert result["company_name"] == "TestCompanyName"
+    assert result["application_status"] == "no response"
