@@ -8,27 +8,25 @@ tests for override filters have not yet been implemented
 
 import pytest
 from pathlib import Path
-import yaml
-from typing import List, Dict, Union
-import re
-from constants import APPLIED_FILTER_PATH #, APPLIED_FILTER_OVERRIDES_PATH
+from typing import List
+from constants import APPLIED_FILTER_PATH
 from test_constants import DESIRED_PASS_APPLIED_EMAIL_FILTER_SUBJECT_FROM_PAIRS, \
-    DESIRED_FAIL_APPLIED_EMAIL_FILTER_SUBJECT_FROM_PAIRS, SAMPLE_FILTER_PATH
-
-FilterConfigType = List[Dict[str, Union[str, int, bool, list, dict]]]
+    DESIRED_FAIL_APPLIED_EMAIL_FILTER_SUBJECT_FROM_PAIRS, SAMPLE_FILTER_PATH, \
+    DESIRED_PASS_MANUAL_PARSE_SUBJECT_FROM_PAIRS, \
+    DESIRED_FAIL_MANUAL_PARSE_SUBJECT_FROM_PAIRS, SAMPLE_OVERRIDE_FILTER_PATH
+from utils.filter_utils import load_filter_config, apply_base_filter, apply_override_filter, FilterConfigType
 
 FITLER_CONFIG_DIR = Path(__file__).parent.parent / "email_query_filters"
 
 def get_base_filter_config_paths() -> List[Path]:
-    return [SAMPLE_FILTER_PATH] + [x for x in FITLER_CONFIG_DIR.iterdir() if "override" not in str(x)]
+    rer_val = [SAMPLE_FILTER_PATH] + [x for x in FITLER_CONFIG_DIR.iterdir() \
+        if ("override" not in str(x)) and ("manual" not in str(x))]
+    return rer_val
 
 def get_override_filter_config_paths() -> List[Path]:
-    return [x for x in FITLER_CONFIG_DIR.iterdir() if "override" in str(x)]
-
-def load_filter_config(filter_path: str) -> FilterConfigType:
-    with open(filter_path, 'r') as fid:
-        filter_config = yaml.safe_load(fid)
-        return filter_config     
+    ret_val = [SAMPLE_OVERRIDE_FILTER_PATH] + [x for x in FITLER_CONFIG_DIR.iterdir() \
+        if ("override" in str(x)) or ("manual" in str(x))]
+    return ret_val
 
 def validate_schema_block_order(filter_config: FilterConfigType) -> bool:
     """
@@ -56,56 +54,22 @@ def test_base_filter_yaml_schema(filter_config):
     assert all (["*" not in x for x in exclude_terms]), "wildcard is not allowed in exclude blocks"
     assert validate_schema_block_order(filter_config), "Exclude block found before an include block"
 
-def apply_base_filter(subject_text, from_text, filter_config) -> bool:
-    """Applies the YAML filter to the given text."""
-
-    ret_val = False # Default to failing if no filter logic is defined.
-
+@pytest.mark.parametrize("filter_config", [load_filter_config(x) for x in get_override_filter_config_paths()])
+def test_override_filter_yaml_schema(filter_config):
+    """
+    right now this just checks that there are no null "include_terms" fields
+    """
     for block in filter_config:
-        if block["field"] == "subject":
-            # check if the text is in the any, include block for that field
-            if block["logic"] == "any" and block["how"] == "include":
-                # simple compare
-                if not ret_val:
-                    ret_val = any([x.lower() in subject_text.lower() for x in block["terms"] if "*" not in x])
+        for sub_block in block:
+            for key, value in sub_block.items():
+                if key == "include_terms":
+                    assert value is not None, "include_terms must not be NULL in an override or manual filter config."
 
-                # use regext for wildcard compare
-                if not ret_val:
-                    ret_val = any([re.findall(x.replace(" * ", ".*").lower(), subject_text.lower()) for x in block["terms"] if "*" in x])
 
-            # check if the text is in the all, exclude block for that field.
-            # all, exclude logic will override any matching includes
-            if ret_val:
-                if block["logic"] == "all" and block["how"] == "exclude":
-                    ret_val = all([x.lower() not in subject_text.lower() for x in block["terms"]])
-
-        if block["field"] == "from":
-            # check if the text is in the any, include block for that field
-            if block["logic"] == "any" and block["how"] == "include":
-                # simple compare
-                if not ret_val:
-                    ret_val = any([x.lower() in from_text.lower() for x in block["terms"] if "*" not in x])
-
-                # use regext for wildcard compare
-                if not ret_val:
-                    ret_val = any([re.findall(x.replace(" * ", ".*").lower(), from_text.lower()) for x in block["terms"] if "*" in x])
-
-            # check if the text is in the all, exclude block for that field.
-            # all, exclude logic will override any matching includes
-            if ret_val:
-                if block["logic"] == "all" and block["how"] == "exclude":
-                    ret_val = all([x.lower() not in from_text.lower() for x in block["terms"]])
-
-    return ret_val 
-
-def apply_override_filter(text, field, filter_config) -> bool:
-    """Applies the YAML filter to the given text."""
-
-    pass
-
-@pytest.mark.parametrize("test_constant,filter_config", 
-                         [(DESIRED_PASS_APPLIED_EMAIL_FILTER_SUBJECT_FROM_PAIRS, APPLIED_FILTER_PATH)])
-def test_apply_email_filter_desired_pass(test_constant, filter_config):
+@pytest.mark.parametrize("test_constant,filter_config,filter_type", 
+                         [(DESIRED_PASS_APPLIED_EMAIL_FILTER_SUBJECT_FROM_PAIRS, APPLIED_FILTER_PATH, "base"),
+                          (DESIRED_PASS_MANUAL_PARSE_SUBJECT_FROM_PAIRS, SAMPLE_OVERRIDE_FILTER_PATH, "override")])
+def test_apply_email_filter_desired_pass(test_constant, filter_config, filter_type):
     """
     Tests if the desired subject, from pairs in test_constants will pass the filter
 
@@ -113,20 +77,24 @@ def test_apply_email_filter_desired_pass(test_constant, filter_config):
     in utils/filter_utils. Instead, it tries to calculate whether an item will be included
     in a gmail search based on the contents of the yaml file.
     """
-    filter_config = load_filter_config(APPLIED_FILTER_PATH)
+    filter_config = load_filter_config(filter_config)
 
     result_list = []
     for subject_text, from_text in test_constant:
-        result = apply_base_filter(subject_text, from_text, filter_config)
-        result_list.append(result)
+        if filter_type == "base":
+            result = apply_base_filter(subject_text, from_text, filter_config)
+            result_list.append(result)
+        elif filter_type == "override":
+            result = apply_override_filter(subject_text, from_text, filter_config)
+            result_list.append(result)
 
     assert all(result_list), \
         f"These subject, from pairs failed to pass: {[x for x, y in list(zip(test_constant, result_list)) if not y]}"
     
-
-@pytest.mark.parametrize("test_constant,filter_config", 
-                         [(DESIRED_FAIL_APPLIED_EMAIL_FILTER_SUBJECT_FROM_PAIRS, APPLIED_FILTER_PATH)])
-def test_apply_email_filter_desired_fail(test_constant, filter_config):
+@pytest.mark.parametrize("test_constant,filter_config,filter_type", 
+                         [(DESIRED_FAIL_APPLIED_EMAIL_FILTER_SUBJECT_FROM_PAIRS, APPLIED_FILTER_PATH, "base"),
+                          (DESIRED_FAIL_MANUAL_PARSE_SUBJECT_FROM_PAIRS, SAMPLE_OVERRIDE_FILTER_PATH, "override")])
+def test_apply_email_filter_desired_fail(test_constant, filter_config, filter_type):
     """
     Tests if the desired subject, from pairs in test_constants will pass the filter
 
@@ -134,15 +102,20 @@ def test_apply_email_filter_desired_fail(test_constant, filter_config):
     in utils/filter_utils. Instead, it tries to calculate whether an item will be included
     in a gmail search based on the contents of the yaml file.
     """
-    filter_config = load_filter_config(APPLIED_FILTER_PATH)
+    filter_config = load_filter_config(filter_config)
 
     result_list = []
     for subject_text, from_text in test_constant:
-        result = apply_base_filter(subject_text, from_text, filter_config)
-        result_list.append(result)
+        if filter_type == "base":
+            result = apply_base_filter(subject_text, from_text, filter_config)
+            result_list.append(result)
+        if filter_type == "override":
+            result = apply_override_filter(subject_text, from_text, filter_config)
+            result_list.append(result)
 
         if result:
             print(f"(subject: {subject_text}, from: {from_text} passed, which is undesired")
 
     assert not(any(result_list)), \
         f"These subject, from pairs failed to fail: {[x for x, y in list(zip(test_constant, result_list)) if y]}"
+

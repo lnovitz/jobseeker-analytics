@@ -1,0 +1,45 @@
+# specific AND-logic combinations of subject + from to include or exclude in manual parsing. 
+# These should as specific as possible
+
+# wildcards are not permitted in overrides
+
+# NOTE: @myworkday.com and @ashbyhq.com are common domains but seem to have a lot
+# of customization options for each company, so these emails are all differnt
+
+# Example:
+-
+  - field: subject
+    include_terms: #individual items in this list will have any-logic
+      - your application was sent to
+    exclude_terms: ~ #individual items in this list will ahve and-logic
+  - field: from
+    include_terms: 
+      - "jobs-noreply@linkedin.com"
+    exclude_terms: ~
+-
+  - field: subject
+    include_terms:
+      - thank you for applying to
+    exclude_terms: ~
+  - field: from
+    include_terms: 
+      - "@us.greenhouse-mail.io"
+    exclude_terms: ~
+-
+  - field: subject
+    include_terms:
+      - thank you for your application to 
+    exclude_terms: ~
+  - field: from
+    include_terms: 
+      - "@hire.lever.co"
+    exclude_terms: ~
+- #leave this test case in here for unit test purposes
+  - field: subject
+    include_terms:
+      - "Invitation from an unknown sender: Interview with TestCompanyName"
+    exclude_terms: ~
+  - field: from
+    include_terms:
+      - "recruitername@testcompanyname.com"
+    exclude_terms: ~

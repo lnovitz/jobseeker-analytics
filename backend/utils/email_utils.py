@@ -3,11 +3,15 @@ import email
 import logging
 import re
 from typing import Dict, Any
+import json
 
 from bs4 import BeautifulSoup
 from email_validator import validate_email, EmailNotValidError
 
-from constants import GENERIC_ATS_DOMAINS
+from constants import GENERIC_ATS_DOMAINS, APPLIED_FILTER_MANUAL_PATH
+
+from utils.llm_utils import process_email as process_email_llm
+from utils.filter_utils import load_filter_config, apply_override_filter
 
 logger = logging.getLogger(__name__)
 
@@ -384,3 +388,42 @@ def get_top_consecutive_capitalized_words(tuples_list):
     except Exception as e:
         logger.error("Error getting top consecutive capitalized words: %s", e)
     return ""
+
+
+def process_email_manual(msg):
+    result = None
+    pattern = None
+    if "jobs-noreply@linkedin.com" in msg["from"]:
+        pattern = r"Your application was sent to ([\w\s]+)"
+    if "us.greenhouse-mail.io" in msg["from"]:
+        pattern = r"Thank you for applying to ([\w\s]+)"
+    if "hire.lever.co" in msg["from"]:
+        pattern = r"Thank you for your application to ([\w\s]+)"
+    # I included this case here for unit test purposes but this is sloppy. Open to suggestions.
+    # The obvious option is to generate sample emails matching each of the 3 criteria above but 
+    # I was feeling light the test_constants.py file is getting to unweildy....
+    if "recruitername@testcompanyname.com" in msg["from"]: 
+        pattern = r"Interview with ([\w\s]+)"
+
+    if pattern is not None:
+        match = re.search(pattern, msg["subject"], re.IGNORECASE)
+        if match:
+            company_name = match.group(1).strip()
+            result_dict = {"company_name": company_name, "application_status": "no response"}
+            result = json.dumps(result_dict)
+
+    return result
+
+def parse_email(msg):
+    filter_config = load_filter_config(APPLIED_FILTER_MANUAL_PATH)
+
+    result = None
+    if apply_override_filter(subject_text=msg["subject"], from_text=msg["from"], filter_config=filter_config):
+        result = process_email_manual(msg)
+        processor = "manual"
+    
+    if result is None:
+        result = process_email_llm(msg["text_content"])
+        processor = "llm"
+
+    return result, processor

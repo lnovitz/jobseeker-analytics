@@ -132,3 +132,12 @@ def test_get_company_name_returns_last_capital_word_in_subject_line():
 def test_get_email_received_at_timestamp():
     received_at = email_utils.get_received_at_timestamp(1, SAMPLE_MESSAGE)
     assert received_at == "Thu, 2 May 2024 16:45:00 +0000"
+
+
+def test_process_email_manual():
+    subject_line = email_utils.get_email_subject_line(SAMPLE_MESSAGE)
+    from_address = email_utils.get_email_from_address(SAMPLE_MESSAGE)
+    msg = {"subject": subject_line, "from": from_address}
+    result = email_utils.process_email_manual(msg)
+
+    assert result == '{"company_name": "TestCompanyName", "application_status": "no response"}'
