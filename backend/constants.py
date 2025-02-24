@@ -19,7 +19,7 @@ GENERIC_ATS_DOMAINS = [
     "otta.com",
 ]
 
-DEFAULT_DAYS_AGO = 365 * 2
+DEFAULT_DAYS_AGO = 90
 # Get the current date
 current_date = datetime.now()
 
