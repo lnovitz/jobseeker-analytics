@@ -2,7 +2,13 @@ import base64
 import email
 import logging
 import re
+import time
+from googleapiclient.errors import HttpError
+from ssl import SSLError
 from typing import Dict, Any
+
+import faulthandler
+faulthandler.enable()
 
 from bs4 import BeautifulSoup
 from email_validator import validate_email, EmailNotValidError
@@ -80,12 +86,7 @@ def get_email_content(email_data: Dict[str, Any]) -> str:
 def get_email(message_id: str, gmail_instance=None):
     if gmail_instance:
         try:
-            message = (
-                gmail_instance.users()
-                .messages()
-                .get(userId="me", id=message_id, format="raw")
-                .execute()
-            )
+            message = get_email_with_retry_mechanism(message_id, gmail_instance)
             msg_str = base64.urlsafe_b64decode(message["raw"].encode("ASCII")).decode(
                 "utf-8"
             )
@@ -149,6 +150,20 @@ def get_email(message_id: str, gmail_instance=None):
             return {}
     return {}
 
+
+def get_email_with_retry_mechanism(message_id, gmail_instance, retries=5, delay=1):
+    for attempt in range(retries):
+        try:
+            message = gmail_instance.users().messages().get(userId="me", id=message_id, format='raw').execute()
+            return message
+        except (HttpError, SSLError) as e:
+            logger.error(f"Error retrieving email with id {message_id}: {e}")
+            if attempt < retries - 1:
+                logger.info(f"Retrying in {delay} seconds...")
+                time.sleep(delay)
+                delay *= 2  # Exponential backoff
+            else:
+                raise
 
 def get_email_ids(query: tuple = None, gmail_instance=None):
     email_ids = []

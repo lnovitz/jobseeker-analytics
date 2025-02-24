@@ -1,6 +1,7 @@
 import datetime
 import logging
 import os
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from fastapi import FastAPI, Request, Depends
 from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
@@ -19,7 +20,7 @@ from utils.email_utils import (
     get_email,
 )
 from utils.file_utils import get_user_filepath
-from utils.llm_utils import process_email
+from utils.minilm_utils import process_email
 from utils.config_utils import get_settings
 from session.session_layer import validate_session
 
@@ -97,6 +98,32 @@ async def logout(request: Request, response: RedirectResponse):
     return RedirectResponse("/", status_code=303)
 
 
+def process_single_email(message, user, service, idx, total_messages):
+    message_data = {}
+    msg_id = message["id"]
+    logger.info(f"user_id:{user.user_id} begin processing for email {idx} of {total_messages} with id {msg_id}")
+    msg = get_email(message_id=msg_id, gmail_instance=service)
+    if msg:
+        result = process_email(msg["text_content"])
+        if not isinstance(result, str) and result:
+            logger.info(f"user_id:{user.user_id} successfully extracted email {idx} of {total_messages} with id {msg_id}")
+        else:
+            result = {}
+            logger.warning(f"user_id:{user.user_id} failed to extract email {idx} of {total_messages} with id {msg_id}")
+        message_data["company_name"] = [result.get("company_name", "")]
+        message_data["application_status"] = [result.get("application_status", "")]
+        message_data["received_at"] = [msg.get("date", "")]
+        message_data["subject"] = [msg.get("subject", "")]
+        message_data["from"] = [msg.get("from", "")]
+
+        # Expose the message id on the dev environment
+        if settings.ENV == "dev":
+            message_data["id"] = [msg_id]
+        # Exporting the email data to a CSV file
+        export_to_csv(user.filepath, user.user_id, message_data)
+    return message_data
+
+
 def fetch_emails(user: AuthenticatedUser) -> None:
     global api_call_finished
     
@@ -114,30 +141,15 @@ def fetch_emails(user: AuthenticatedUser) -> None:
     if len(messages) > 1000:
         logger.warning(f"**************detected {len(messages)} that passed the filter!")
 
-    for idx, message in enumerate(messages):
-        message_data = {}
-        # (email_subject, email_from, email_domain, company_name, email_dt)
-        msg_id = message["id"]
-        logger.info(f"user_id:{user.user_id} begin processing for email {idx+1} of {len(messages)} with id {msg_id}")
-        msg = get_email(message_id=msg_id, gmail_instance=service)
-        if msg:
-            result = process_email(msg["text_content"])
-            if not isinstance(result, str) and result:
-                logger.info(f"user_id:{user.user_id} successfully extracted email {idx+1} of {len(messages)} with id {msg_id}")
-            else:
-                result = {}
-                logger.warning(f"user_id:{user.user_id} failed to extract email {idx+1} of {len(messages)} with id {msg_id}")
-            message_data["company_name"] = [result.get("company_name", "")]
-            message_data["application_status"] = [result.get("application_status", "")]
-            message_data["received_at"] = [msg.get("date", "")]
-            message_data["subject"] = [msg.get("subject", "")]
-            message_data["from"] = [msg.get("from", "")]
+    total_messages = len(messages)
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        futures = [executor.submit(process_single_email, message, user, service, idx, total_messages) for idx, message in enumerate(messages)]
+        for future in as_completed(futures):
+            try:
+                future.result()
+            except Exception as e:
+                logger.error(f"Error processing email: {e}")
 
-            #expose the message id on the dev environment
-            if settings.ENV == "dev":
-                message_data["id"] = [msg_id]
-            # Exporting the email data to a CSV file
-            export_to_csv(user.filepath, user.user_id, message_data)
     api_call_finished = True
 
 
