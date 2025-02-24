@@ -1,5 +1,6 @@
 import base64
 import email
+import faulthandler
 import logging
 import re
 import time
@@ -7,16 +8,13 @@ from googleapiclient.errors import HttpError
 from ssl import SSLError
 from typing import Dict, Any
 
-import faulthandler
-
-faulthandler.enable()
-
 from bs4 import BeautifulSoup
 from email_validator import validate_email, EmailNotValidError
 
 from constants import GENERIC_ATS_DOMAINS
 
 logger = logging.getLogger(__name__)
+faulthandler.enable()
 
 
 def clean_whitespace(text: str) -> str:
