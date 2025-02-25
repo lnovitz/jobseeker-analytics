@@ -1,0 +1,33 @@
+# supports * as a wildcard for any number of characters in "include_terms" only.
+# Don't use wildcards in "exclude_terms", as it would imply you want to exclude all characters.
+# Don't use "any" logic with exlusion terms as this will result in all emails matching the filter.
+# -------------------------------------- #
+## include any of the following subjects
+- logic: any
+  field: subject
+  how: include
+  terms:
+    - application has been submitted
+    - application to * successfully submitted
+
+## include any of the following from addresses
+- logic: any
+  field: from
+  how: include
+  terms:
+    - do-not-reply@jobs.microsoft.com
+
+## exclude all of the following from addresses
+- logic: all
+  field: from
+  how: exclude
+  terms:
+    - no-reply@comet.zillow.com
+
+## exclude all of the following subjects
+- logic: all
+  field: subject
+  how: exclude
+  terms:
+    - watering
+    

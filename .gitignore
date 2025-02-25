@@ -10,6 +10,10 @@ venv/
 __pycache__/
 .history/
 
+# Ignore all .env files
+.env
+.env.*
+
 # Debug logs
 npm-debug.log*
 yarn-debug.log*

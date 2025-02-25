@@ -39,10 +39,8 @@ This project uses **Google OAuth** for authentication. To run the app locally, y
 1. On Windows: We recommend that you use WSL2. [Installation instructions here](https://learn.microsoft.com/en-us/windows/wsl/). 
 2. On Windows: start WSL 
 3. In Github, fork the repository
-4. Clone this fork  using ```git clone [URL copied from fork on github]```
-5. ```cd``` into the repo you just cloned
-
----
+4. Clone this fork  using ```git clone https://github.com/lnovitz/jobseeker-analytics.git```
+5. ```cd jobseeker-analytics``` into the repo you just cloned
 
 ### Get a Google AI API key
 1. Go to [https://aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey)
@@ -67,9 +65,9 @@ This project uses **Google OAuth** for authentication. To run the app locally, y
 ---
 
 ### Set Up Environment Variables
-1. Copy `.env.example` to `.env`:
+1. Copy `backend\.env.example` to `backend\.env`:
    ```sh
-   cp .env.example .env
+   cp backend/.env.example backend/.env
    ```
 2. Edit the `.env` file with your credentials:  
    ```ini
@@ -80,29 +78,14 @@ This project uses **Google OAuth** for authentication. To run the app locally, y
    DB_NAME=your-db-name-here
    DB_USER=your-db-user-here
    DB_PASSWORD=your-db-password-here
+   APP_URL=http://localhost:3000
    ```
    **🔒 Never share your `.env` file or commit it to Git!**  
 
 ---
 
 
-### Run the App: Two options  
-
-#### Option 1: Docker Container
-
-1. If this is your first time using Docker, install as below:
-   - Install Docker. On Windows/Mac install [Docker Desktop](https://docs.docker.com/get-started/get-docker/). On Linux install [Docker Engine](https://docs.docker.com/engine/install/). 
-   - Start Docker Desktop or Docker Engine
-      - On Windows: make sure to select "Use the WSL 2 based engine" under Settings/general.
-      - On Linux: you may need to take additional post-installation steps, see (here)[https://docs.docker.com/engine/install/linux-postinstall/]. 
-2. Start the app using Docker compose-up. The first time you run this locally it may take a few minutes to set up.
-```
-docker-compose up -d
-```
-3. Then, visit [http://localhost:8000](http://localhost:8000) to begin testing the app locally.
-
-
-#### Option 2: venv and FastAPI server
+### Run the App
 
 Once your `.env` file is set up, start the app by following the instructions below:
 1. Create and activate virtual environment:
@@ -118,13 +101,18 @@ Once your `.env` file is set up, start the app by following the instructions bel
    ```
    
 2. Install dependencies:
-   ```sh
-   pip install -r requirements.txt
+   ```bash
+   pip install -r backend/requirements.txt
+   cd frontend && npm install
    ```
-4. Run FastAPI Server Locally:
-   ```sh
-   cd backend
-   uvicorn main:app --reload
+4. Run backend and frontend apps:
+   In one terminal window, run:
+   ```bash
+   cd backend && uvicorn main:app --reload
+   ```
+   In another terminal window, run:
+   ```bash
+   cd frontend && npm run dev
    ```
 6. Check it out @:
    http://127.0.0.1:8000

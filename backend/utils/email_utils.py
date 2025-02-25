@@ -2,6 +2,7 @@ import base64
 import email
 import logging
 import re
+from typing import Dict, Any
 
 from bs4 import BeautifulSoup
 from email_validator import validate_email, EmailNotValidError
@@ -10,6 +11,11 @@ from constants import GENERIC_ATS_DOMAINS
 
 logger = logging.getLogger(__name__)
 
+def clean_whitespace(text: str) -> str:
+    """
+    remove \n, \r, and \t from strings
+    """
+    return text.replace("\n", "").replace("\r", "").replace("\t", "")
 
 def is_automated_email(email: str) -> bool:
     """
@@ -38,7 +44,6 @@ def is_automated_email(email: str) -> bool:
 
     return False  # It's likely from a person
 
-
 def is_valid_email(email: str) -> bool:
     try:
         validate_email(email)
@@ -48,6 +53,29 @@ def is_valid_email(email: str) -> bool:
         print(str(e))
         return False
 
+def get_email_content(email_data: Dict[str, Any]) -> str:
+    """
+    parses html content of email data and appends it to text content and subject conent
+
+    Note 1: linkedIn easy apply messages have *different* html and text_content, so we need to keep both
+    Note 2: some automated emails only contain the information about hte company in the subject and
+        not the email body, so we need to append this to make sure the email processor gets to see it. 
+    
+    """
+    text_content = email_data["subject"]
+
+    if email_data["text_content"]:
+        text_content += "\n" 
+        text_content += email_data["text_content"]
+        
+    if email_data["html_content"]:
+        soup = BeautifulSoup(email_data["html_content"], "html.parser")
+        html_content = soup.get_text(separator=" ", strip=True)
+
+        text_content += "\n" 
+        text_content += html_content
+
+    return text_content
 
 def get_email(message_id: str, gmail_instance=None):
     if gmail_instance:
@@ -76,9 +104,9 @@ def get_email(message_id: str, gmail_instance=None):
             }
 
             # Getting email headers
-            email_data["from"] = mime_msg.get("From")
-            email_data["to"] = mime_msg.get("To")
-            email_data["subject"] = mime_msg.get("Subject")
+            email_data["from"] = clean_whitespace(mime_msg.get("From"))
+            email_data["to"] = clean_whitespace(mime_msg.get("To"))
+            email_data["subject"] = clean_whitespace(mime_msg.get("Subject"))
             email_data["date"] = mime_msg.get("Date")
 
             # Extract body of the email
@@ -111,13 +139,13 @@ def get_email(message_id: str, gmail_instance=None):
                         decode=True
                     ).decode(encoding="utf-8", errors="ignore")
 
-            if email_data["html_content"] and not email_data["text_content"]:
-                soup = BeautifulSoup(email_data["html_content"], "html.parser")
-                email_data["text_content"] = soup.get_text(separator=" ", strip=True)
+            email_data["raw_text_content"] = email_data["text_content"]
+            email_data["text_content"] = get_email_content(email_data)
 
             return email_data
+        
         except Exception as e:
-            print(f"Error retrieving email: {e}")
+            logger.exception(f"Error retrieving email with id {message_id}: {e}")
             return {}
     return {}
 

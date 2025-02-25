@@ -1,0 +1,13 @@
+echo "Running frontend pre-commit hook"
+
+# Get list of staged files
+STAGED_FILES=$(git diff --cached --name-only)
+
+# Check if any staged files are in the frontend directory
+if echo "$STAGED_FILES" | grep -q "^frontend/"; then
+    echo "Changes detected in frontend files. Running checks..."
+    cd frontend
+    npm run format
+else
+    echo "No changes in frontend files. Skipping checks."
+fi

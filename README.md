@@ -1,178 +1,89 @@
+# **jobba.help - The Open-Source Job Search Tracker**
+
+## **Overview**
+
+jobba.help is an open-source job tracker that reliably logs every application by integrating with your inbox—no manual entry, just automated and accurate tracking.
+
+## **The Vision**
+
+With enough support, jobba.help will overhaul the job search. The more jobseekers contribute, the better insights and tools we generate. 
+
+Imagine the perfect job search:
+
+- **Relevant roles**  - you don't have to visit 10 job boards to find a job
+- **Analytics** - you know which industries and company sizes your profile attracts
+- **Task organization** - see pending interviews and follow-ups at a glance without digging through hundreds of emails
+- **Ghosting exposed** - public leaderboards will discourage bad hiring practices
+- **Interview scheduling** is effortless, eliminating back-and-forth emails
+- **Asking for help is easy** - Share job search updates with your support system and keep your search visible to the people who can vouch for you
+
+## **Want to Beta Test?**
+
+We'd love to have you on board! Here's how you can join:
+
+1. **Send an Email:** [Click here to email us](mailto:help@jobba.help?subject=jobba.help%20beta%20signup&body=my%20google%20gmail%20address%20is)
+   - Mention how you heard about the app (community, friend’s name, etc.).
+   - We'll respond as soon as possible to grant you access (subject to Google’s beta testing user limits).
+2. **Join our Discord:** [https://discord.gg/5tTT6WVQyw](https://discord.gg/5tTT6WVQyw)
+
+## **Latest Feature: Automated Job Tracker**
+
+Our automated job tracker allows you to:
+
+- **Login with Google:** Automatically generate a spreadsheet filled with the date you applied, company name, and status of the application.
+- **No manual updates required:** The spreadsheet updates automagically, saving you time and effort.
+
+🎥 **Sneak Peek**: https://www.youtube.com/watch?v=-cOKR4JtceY
 
 [![Watch the video](http://img.youtube.com/vi/-cOKR4JtceY/maxresdefault.jpg)](https://www.youtube.com/watch?v=-cOKR4JtceY)
-🎥 Sneak Peek: https://www.youtube.com/watch?v=-cOKR4JtceY
 
-## _"um... what's so special about another job tracker spreadsheet?"_
+## 🛠 **Features in Development**
 
-What's special is that the spreadsheet is automagically updated.
+- ✅ Built-in networking tools to engage friends & family in your search.
+- ✅ Customized job search filter
+- ✅ Pending interview & task management to keep you organized.
+- ✅ Job application analytics for smarter decision-making.
+- ✅ Ghosting reports to hold companies accountable.
 
-You do not have to update the spreadsheet.
+## 🤝 **Contributing**
 
-You login with Google, and bam! The spreadsheet is generated for you.
+jobba.help is open-source and community-driven. We welcome contributions from developers, designers, and jobseekers alike! 
 
-## Want to beta test? 
+You do not have to have experience with our tech stack to contribute.
 
-- To beta test, [send me an email](mailto:help@jobba.help?subject=Jobseeker%20Analytics%20Free%20Trial&body=my%20google%20gmail%20address%20is).
-    1. Mention how you heard about the app (which community, friend’s name)
-    2. I’ll respond as soon as I can to give you access (depends on Google’s beta testing user limits)
+View contributing guidelines [here.](https://github.com/lnovitz/jobseeker-analytics/blob/main/CONTRIBUTING.md)
 
-## Your export will look something like this:
+ 🏗 **Tech Stack**
 
-![Screenshot 2024-12-29 at 7 41 17_PM (1) (1)](https://github.com/user-attachments/assets/951ae900-c875-4745-9d4b-ac77d313d281)
+- **Frontend:** Next, TypeScript
+- **Backend:** FastAPI, Python
+- **Database:** PostgreSQL
+- **Integrations:** Gmail API
 
-## Do you code and want to volunteer?
-- Take a look at the issues [list](https://github.com/lnovitz/jobseeker-analytics/issues) and comment on the issue you're interested in fixing.
-- _Note_: beginners are welcome!
-- I hope to create a safe space for new open source contributors.
-- No question is dumb
+## 🔒 **Privacy & Security**
 
-## Vision
+We take data privacy seriously. jobba.help is currently in beta (100 user testing limit), and we have a code scanning tool in place to actively address security issues. Since jobba.help integrates with Gmail, the application will undergo a strict verification process before it is published to the public. 
 
-As a job seeker with a gmail account, I want to be able to calculate  my initial application response rate with the touch of a button
+## 📢 **A note from the maintainer**
 
-## Example
+Help us build the first open-source job search platform. Join our Discord at [https://discord.gg/5tTT6WVQyw](https://discord.gg/5tTT6WVQyw)
 
-Below is an example of a typical email you'd receive after applying for a role.
+Why open-source, you might ask?
 
-> From: noreply-hr@flyingunicornsarefake.com
->
-> Date: January 1
-> 
-> Subject: We received your application
-> 
-> Body: Thanks for applying to FlyingUnicorns! We'll reach out if there's a fit.
+Companies often prioritize their own interests over those of jobseekers, focusing on profit rather than genuine support.
 
+My goal is different.
 
-<details>
-<summary>Let's imagine I sent a total of 10 applications on January 1, including the 1 above for FlyingUnicorns.
-</summary>
+I envision a community-driven tool, built by the people, for the people, ensuring it remains accessible and beneficial to all jobseekers.
 
-> From: noreply-hr@company1isfake.com
->
-> Date: January 1
-> 
-> Subject: We received your application
-> 
-> Body: Thanks for applying to Company 1! We'll reach out if there's a fit.
+Because it's open-source, future developers can always fork this project and continue the work. 
 
-> From: noreply-hr@company2isfake.com
->
-> Date: January 1
-> 
-> Subject: We received your application
-> 
-> Body: Thanks for applying to Company 2! We'll reach out if there's a fit.
+This is especially important if I, the maintainer, ever win the lottery, retire my computer, and open a cat café. 👀 
 
-> From: noreply-hr@company3isfake.com
->
-> Date: January 1
-> 
-> Subject: We received your application
-> 
-> Body: Thanks for applying to Company 3! We'll reach out if there's a fit.
+-Lianna
 
-> From: noreply-hr@company4isfake.com
->
-> Date: January 1
-> 
-> Subject: We received your application
-> 
-> Body: Thanks for applying to Company 4! We'll reach out if there's a fit.
+## **Support & Feedback**
 
-> From: noreply-hr@company5isfake.com
->
-> Date: January 1
-> 
-> Subject: We received your application
-> 
-> Body: Thanks for applying to Company 5! We'll reach out if there's a fit.
+If you experience any errors or want to share feedback, join our Discord at [https://discord.gg/5tTT6WVQyw](https://discord.gg/5tTT6WVQyw).
 
-> From: noreply-hr@company6isfake.com
->
-> Date: January 1
-> 
-> Subject: We received your application
-> 
-> Body: Thanks for applying to Company 6! We'll reach out if there's a fit.
-
-> From: noreply-hr@company7isfake.com
->
-> Date: January 1
-> 
-> Subject: We received your application
-> 
-> Body: Thanks for applying to Company 7! We'll reach out if there's a fit.
-
-> From: noreply-hr@company8isfake.com
->
-> Date: January 1
-> 
-> Subject: We received your application
-> 
-> Body: Thanks for applying to Company 8! We'll reach out if there's a fit.
-
-> From: noreply-hr@company9isfake.com
->
-> Date: January 1
-> 
-> Subject: We received your application
-> 
-> Body: Thanks for applying to Company 9! We'll reach out if there's a fit.
-
-> From: noreply-hr@flyingunicornsarefake.com
->
-> Date: January 1
-> 
-> Subject: We received your application
-> 
-> Body: Thanks for applying to FlyingUnicorns! We'll reach out if there's a fit.
-</details>
-
-<br>
-Now let's imagine on January 14, 2 weeks later, the only response I've gotten is from the FlyingUnicorns company.
-
-<br>
-
->
->
-> From: noreply-hr@flyingunicornsarefake.com
->
-> Date: January 14
-> 
-> Subject: Update from FlyingUnicorns
-> 
-> Body: In your application we noticed you said you live in outer space. We only hire on Earth, sorry! We'll keep in touch if our borders open up though.
-
-While that's a response, it's not the response we're looking for. 
-<br>So we're batting 0% response rate so far.
-
-But wait, there's hope!
-
-On January 28, Company 6 responded.
-> From: fakeperson@company6isfake.com
->
-> Date: January 28
-> 
-> Subject: Interview Availability for Company 6
-> 
-> Body: Thanks for applying to Company 6! We'd like to schedule a short call to discuss the engineering role you applied for.
-
-So at this point, our response rate is `10%` 
-
-But most people are not simply sending 10 applications and tracking their numbers, at least not these days. You might be casting a wide net, sending hundreds of applications and not bothering to check on your response rate. 10% is a great response rate. But what if your response rate was only 1%? That's an indicator that your resume needs changing. 
-
-## Thoughts for Later Iterations
-
-Imagine if you could check your response rates against different industries... you could make your job search more targeted and effective. 
-
-Imagine if you had a tool to save the resume you used when applying for roles - and could check the response rates against the resume version you used against a specific industry.
-
-Imagine if you could track your success rates with referrals, or you could see at what stage you're getting stuck. 
-
-## Resources
-[Gmail Messages API Doc](https://developers.google.com/gmail/api/reference/rest/v1/users.messages/list)
-
-[Google Console](https://console.cloud.google.com/apis/credentials)
-
-[Never Search Alone - phyl.org - Free Support Group for Job Seekers](https://www.phyl.org/)
-
+You can also always email us at [help@jobba.help](mailto:help@jobba.help).

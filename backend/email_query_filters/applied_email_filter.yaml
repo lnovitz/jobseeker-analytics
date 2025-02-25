@@ -1,0 +1,65 @@
+# supports * as a wildcard for any number of characters in "include_terms" only.
+# Don't use wildcards in "exclude_terms", as it would imply you want to exclude all characters.
+# Don't use "any" logic with exlusion terms as this will result in all emails matching the filter.
+# -------------------------------------- #
+## include any of the following subjects
+- logic: any
+  field: subject
+  how: include
+  terms:
+    - application has been submitted
+    - application received
+    - application submitted
+    - application to * successfully submitted
+    - application was sent
+    - applied to
+    - confirmation of your application
+    - job application confirmation
+    - received your * application
+    - successfully submitted
+    - thank you for applying
+    - thank you for your application
+    - thank you for your interest
+    - thank you for your submission
+    - thank you from
+    - thanks for applying to
+    - thanks for your application
+    - thanks for your interest
+    - ve been referred
+    - your application for
+    - your application to
+    - your application to * has been received
+    - your job application has been received
+    - your recent job application
+    
+## include any of the following from addresses
+- logic: any
+  field: from
+  how: include
+  terms:
+    - careers@
+    - no-reply@ashbyhq.com
+    - no-reply@greenhouse.io
+    - notification@smartrecruiters.com
+
+## exclude all of the following subjects
+- logic: all
+  field: subject
+  how: exclude
+  terms:
+    - do you want to finish your application
+    - watering    
+    - you have new application updates this week
+    - farewell
+    - Verify your candidate account
+    - account created
+    - welcome to the
+
+## exclude all of the following from addresses
+- logic: all
+  field: from
+  how: exclude
+  terms:
+    - IRCC.DoNotReply-NePasRepondre.IRCC@prson-srpel.apps.cic.gc.ca
+    - no-reply@comet.zillow.com
+    - insights@careerseeker.accenture.com

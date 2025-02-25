@@ -1,3 +1,5 @@
+from pathlib import Path
+
 SUBJECT_LINE = "Invitation from an unknown sender: Interview with TestCompanyName @ Thu May 2, 2024 11:00am - 12pm (PDT) (appuser@gmail.com)"
 SAMPLE_MESSAGE = {
     "id": "abc123",
@@ -188,3 +190,26 @@ SAMPLE_MESSAGE = {
     "historyId": "22222222",
     "internalDate": "1111111111000",
 }
+
+DESIRED_PASS_APPLIED_EMAIL_FILTER_SUBJECT_FROM_PAIRS = (
+    ("Thank you for your Application!", "do-not-reply@jobs.microsoft.com"),
+    ("Jobba, your application was sent to The Huts", "jobs-noreply@linkedin.com")
+)
+
+DESIRED_FAIL_APPLIED_EMAIL_FILTER_SUBJECT_FROM_PAIRS = (
+    ("watering applied to plants", "do-not-reply@wateringapp.net"), #made up, would be better to capture the real example
+    ("your application for rental property was viewed", "no-reply@comet.zillow.com"),
+    ("PR Portal (PR application) - Your immigration status update application has been successfully submitted",
+        "IRCC.DoNotReply-NePasRepondre.IRCC@prson-srpel.apps.cic.gc.ca"),
+    ("you have new application updates this week", "jobs-noreply@linkedin.com"),
+    ("Get career advice to guide you to success", "insights@careerseeker.accenture.com"),
+    ("farewell and thank you from", "personalemail@domain.com"),
+    ("Verify your candidate account", "accenture@myworkday.com")
+)
+
+SAMPLE_FILTER_PATH = Path(__file__).parent / "sample_base_filter.yaml"
+EXPECTED_SAMPLE_QUERY_STRING = '''(subject:"application has been submitted" 
+    OR (subject:"application to" AND subject:"successfully submitted") 
+    OR from:"do-not-reply@jobs.microsoft.com" 
+    AND -from:"no-reply@comet.zillow.com" 
+    AND -subject:"watering")'''

@@ -1,0 +1,16 @@
+# specific AND-logic combinations of subject + from to include or exclude. 
+# These should as specific as possible and used to force-include speicific 
+# items that we excluded with previous filters.
+
+# wildcards are not permitted in overrides
+
+# Example:
+-
+  - field: body
+    include_terms:
+      - position
+    exclude_terms: ~
+  - field: from
+    include_terms: 
+      - no-reply@comet.zillow.com
+    exclude_terms: ~

@@ -32,6 +32,7 @@ jobs:
           envkey_DB_USER: your-db-user-here
           envkey_DB_PASSWORD: your-db-password-here
           envkey_CLIENT_SECRETS_FILE: "credentials.json"
+          envkey_APP_URL: http://localhost:3000
           directory: backend
 
       - name: Set up Python
