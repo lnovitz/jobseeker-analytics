@@ -142,3 +142,22 @@ def test_process_email_manual():
 
     assert result["company_name"] == "TestCompanyName"
     assert result["application_status"] == "no response"
+
+
+def test_extract_company_name_from_subject():
+    subject = "Thanks for your interest in Heirloom, Lianna"
+    expected_company_name = "Heirloom"
+    assert email_utils.extract_company_name_from_subject(subject) == expected_company_name
+
+    subject = "Thanks for your interest in Heirloom. Lianna"
+    expected_company_name = "Heirloom"
+    assert email_utils.extract_company_name_from_subject(subject) == expected_company_name
+
+
+    subject = "Thanks for your interest in Heirloom! Lianna"
+    expected_company_name = "Heirloom"
+    assert email_utils.extract_company_name_from_subject(subject) == expected_company_name
+
+    
+
+

@@ -400,42 +400,42 @@ def get_top_consecutive_capitalized_words(tuples_list):
     return ""
 
 
-def process_email_manual(msg):
-    result = None
-    pattern = None
-    if "jobs-noreply@linkedin.com" in msg["from"]:
-        pattern = r"Your application was sent to ([\w\s]+)"
-    if "us.greenhouse-mail.io" in msg["from"]:
-        pattern = r"Thank you for applying to ([\w\s]+)"
-    if "hire.lever.co" in msg["from"]:
-        pattern = r"Thank you for your application to ([\w\s]+)"
-    # I included this case here for unit test purposes but this is sloppy. Open to suggestions.
-    # The obvious option is to generate sample emails matching each of the 3 criteria above but 
-    # I was feeling light the test_constants.py file is getting to unweildy....
-    if "recruitername@testcompanyname.com" in msg["from"]: 
-        pattern = r"Interview with ([\w\s]+)"
+def extract_company_name_from_subject(subject: str) -> str:
+    """
+    Extracts the company name from the subject line based on predefined regex patterns.
+    """
+    patterns = [
+        r"Your application was sent to ([\w\s]+)",
+        r".*(?:applying|applied) (?:to|at) ([\w\s]+)",
+        r".*Application to ([\w\s]+)",
+        r".*Interview with ([\w\s]+)",
+        r".*for your interest in ([A-Za-z]+)",
+        r".*about your application to ([\w\s]+)",
+        r".*received your ([\w\s]+) application*",
+        r".*Thank you from ([\w\s]+)",
+    ]
 
-    if pattern is not None:
-        match = re.search(pattern, msg["subject"], re.IGNORECASE)
+    for pattern in patterns:
+        match = re.search(pattern, subject, re.IGNORECASE)
         if match:
-            company_name = match.group(1).strip()
-            result = {"company_name": company_name, "application_status": "no response"}
+            return match.group(1).strip()
 
-    return result
+    return ""
 
 def parse_email(msg):
     # if msg.get("id") in ["193b43a633daf245"]:
     #     with disable_logging():
     #         import pdb; pdb.set_trace()  # Set a breakpoint here
-    filter_config = load_filter_config(APPLIED_FILTER_MANUAL_PATH)
 
     result = None
-    if apply_override_filter(subject_text=msg["subject"], from_text=msg["from"], filter_config=filter_config):
-        result = process_email_manual(msg)
+    company_name = extract_company_name_from_subject(msg["subject"])  # manual override
+    if company_name:
+        result = {"company_name": company_name, "application_status": "no response"}    # rejection = no response atm
         processor = "manual"
-    
     if result is None:
+        logger.info("subject: %s from: %s", msg["subject"], msg["from"])
         result = process_email_llm(msg["text_content"])
         processor = "llm"
+        
 
     return result, processor
