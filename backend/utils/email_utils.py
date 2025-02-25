@@ -3,6 +3,7 @@ import email
 import logging
 import re
 from typing import Dict, Any
+from contextlib import contextmanager
 
 from bs4 import BeautifulSoup
 from email_validator import validate_email, EmailNotValidError
@@ -13,6 +14,16 @@ from utils.llm_utils import process_email as process_email_llm
 from utils.filter_utils import load_filter_config, apply_override_filter
 
 logger = logging.getLogger(__name__)
+
+
+@contextmanager
+def disable_logging():
+    logging.disable(logging.CRITICAL)
+    try:
+        yield
+    finally:
+        logging.disable(logging.NOTSET)
+
 
 def clean_whitespace(text: str) -> str:
     """
@@ -413,6 +424,9 @@ def process_email_manual(msg):
     return result
 
 def parse_email(msg):
+    # if msg.get("id") in ["193b43a633daf245"]:
+    #     with disable_logging():
+    #         import pdb; pdb.set_trace()  # Set a breakpoint here
     filter_config = load_filter_config(APPLIED_FILTER_MANUAL_PATH)
 
     result = None
