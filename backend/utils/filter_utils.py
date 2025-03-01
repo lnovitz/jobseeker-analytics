@@ -1,4 +1,13 @@
 import yaml
+import re
+from typing import List, Dict, Union
+
+FilterConfigType = List[Dict[str, Union[str, int, bool, list, dict]]]
+
+def load_filter_config(filter_path: str) -> FilterConfigType:
+    with open(filter_path, 'r') as fid:
+        filter_config = yaml.safe_load(fid)
+        return filter_config     
 
 def parse_simple(
         term: str, 
@@ -60,8 +69,10 @@ def parse_wildcard(
     return out_str
 
 def parse_base_filter_config(filter_path: str) -> str:
-    with open(filter_path, 'r') as fid:
-        data = yaml.safe_load(fid)
+    """
+    creates a gmail filter string from a yaml config
+    """
+    data = load_filter_config(filter_path)
 
     filter_str = ""
     for block in data:
@@ -96,8 +107,8 @@ def parse_base_filter_config(filter_path: str) -> str:
 
 def parse_override_filter_config(filter_path: str):
     """ not implemented """
-    with open(filter_path, 'r') as fid:
-        data = yaml.safe_load(fid)
+    
+    data = load_filter_config(filter_path)
         
     filter_str_list = []
     for block in data:
@@ -119,3 +130,80 @@ def parse_override_filter_config(filter_path: str):
     filter_str = "(" + " OR ".join(filter_str_list) + ")"
 
     return filter_str
+
+def apply_base_filter(subject_text, from_text, filter_config) -> bool:
+    """
+    applies a base filter specified in a yaml config and returns a
+    boolean indicating whether a (subject, from) pair passes the filter. 
+    """
+
+    ret_val = False # Default to failing if no filter logic is defined.
+
+    for block in filter_config:
+        if block["field"] == "subject":
+            # check if the text is in the any, include block for that field
+            if block["logic"] == "any" and block["how"] == "include":
+                # simple compare
+                if not ret_val:
+                    ret_val = any([x.lower() in subject_text.lower() for x in block["terms"] if "*" not in x])
+
+                # use regext for wildcard compare
+                if not ret_val:
+                    ret_val = any([re.findall(x.replace(" * ", ".*").lower(), subject_text.lower()) for x in block["terms"] if "*" in x])
+
+            # check if the text is in the all, exclude block for that field.
+            # all, exclude logic will override any matching includes
+            if ret_val:
+                if block["logic"] == "all" and block["how"] == "exclude":
+                    ret_val = all([x.lower() not in subject_text.lower() for x in block["terms"]])
+
+        if block["field"] == "from":
+            # check if the text is in the any, include block for that field
+            if block["logic"] == "any" and block["how"] == "include":
+                # simple compare
+                if not ret_val:
+                    ret_val = any([x.lower() in from_text.lower() for x in block["terms"] if "*" not in x])
+
+                # use regext for wildcard compare
+                if not ret_val:
+                    ret_val = any([re.findall(x.replace(" * ", ".*").lower(), from_text.lower()) for x in block["terms"] if "*" in x])
+
+            # check if the text is in the all, exclude block for that field.
+            # all, exclude logic will override any matching includes
+            if ret_val:
+                if block["logic"] == "all" and block["how"] == "exclude":
+                    ret_val = all([x.lower() not in from_text.lower() for x in block["terms"]])
+
+    return ret_val 
+
+def apply_override_filter_item(text, field, filter_config) -> bool:
+    """
+    applies an override filter specified in a yaml config and returns a
+    boolean indicating whether a (text, field) pair passes the filter. 
+    """
+    ret_val = False # Default to failing if no filter logic is defined.
+    for block in filter_config:
+        for sub_block in block:
+            if sub_block["field"] == field:
+                if sub_block["include_terms"] is not None:
+                    for include_text in sub_block["include_terms"]:
+                        if include_text.lower() in text.lower():
+                            ret_val = True
+                
+                if sub_block["exclude_terms"] is not None:
+                    for exclude_text in sub_block["exclude_terms"]:
+                        if exclude_text.lower() in text.lower():
+                            ret_val = False
+                            #if we find a matching include, break out and return false
+                            return ret_val
+                        
+    return ret_val
+
+def apply_override_filter(subject_text, from_text, filter_config):
+    """
+    apply and logic to subject and from terms
+    """
+    result = apply_override_filter_item(subject_text, "subject", filter_config)
+    result = result and apply_override_filter_item(from_text, "from", filter_config)
+
+    return result

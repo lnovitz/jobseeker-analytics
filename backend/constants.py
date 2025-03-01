@@ -31,6 +31,7 @@ formatted_date = date_days_ago.strftime("%Y/%m/%d")
 
 APPLIED_FILTER_PATH = Path(__file__).parent / "email_query_filters" / "applied_email_filter.yaml"
 APPLIED_FILTER_OVERRIDES_PATH = Path(__file__).parent / "email_query_filters" / "applied_email_filter_overrides.yaml"
+APPLIED_FILTER_MANUAL_PATH = Path(__file__).parent / "email_query_filters" / "applied_email_filter_manual_parse.yaml"
 QUERY_APPLIED_EMAIL_FILTER = (
     f"after:{formatted_date} AND "
     f"({parse_base_filter_config(APPLIED_FILTER_PATH)})") 

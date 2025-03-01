@@ -1,0 +1,30 @@
+# This is an example override filter provided for unit testing
+-
+  - field: subject
+    include_terms: #individual items in this list will have any-logic
+      - thank you for applying
+      - an update on your application
+    exclude_terms: #individual items in this list will ahve and-logic
+      - worthless ad
+  - field: from
+    include_terms: 
+      - "jobs@fictional-company1.com"
+    exclude_terms: ~
+-
+  - field: subject
+    include_terms:
+      - thank you for applying
+    exclude_terms: ~
+  - field: from
+    include_terms: 
+      - "jobs@fictional-company2.com"
+    exclude_terms: ~
+- 
+  - field: subject
+    include_terms:
+      - "Invitation from an unknown sender: Interview with TestCompanyName"
+    exclude_terms: ~
+  - field: from
+    include_terms:
+      - "recruitername@testcompanyname.com"
+    exclude_terms: ~

@@ -16,10 +16,9 @@ from utils.auth_utils import AuthenticatedUser
 from utils.db_utils import export_to_csv
 from utils.email_utils import (
     get_email_ids,
-    get_email,
+    get_email, parse_email
 )
 from utils.file_utils import get_user_filepath
-from utils.llm_utils import process_email
 from utils.config_utils import get_settings
 from session.session_layer import validate_session
 
@@ -116,14 +115,14 @@ def fetch_emails(user: AuthenticatedUser) -> None:
         logger.info(f"user_id:{user.user_id} begin processing for email {idx+1} of {len(messages)} with id {msg_id}")
         msg = get_email(message_id=msg_id, gmail_instance=service)
         if msg:
-            result = process_email(msg["text_content"])
+            result, processor = parse_email(msg)
             if not isinstance(result, str) and result:
                 logger.info(f"user_id:{user.user_id} successfully extracted email {idx+1} of {len(messages)} with id {msg_id}")
             else:
                 result = {}
                 logger.warning(f"user_id:{user.user_id} failed to extract email {idx+1} of {len(messages)} with id {msg_id}")
-            message_data["company_name"] = [result.get("company_name", "")]
-            message_data["application_status"] = [result.get("application_status", "")]
+            message_data["company_name"] = [result.get("company_name", "").strip('"')]
+            message_data["application_status"] = [result.get("application_status", "").strip('"')]
             message_data["received_at"] = [msg.get("date", "")]
             message_data["subject"] = [msg.get("subject", "")]
             message_data["from"] = [msg.get("from", "")]
@@ -131,6 +130,7 @@ def fetch_emails(user: AuthenticatedUser) -> None:
             #expose the message id on the dev environment
             if settings.ENV == "dev":
                 message_data["id"] = [msg_id]
+                message_data["processor"] = [processor]
             # Exporting the email data to a CSV file
             export_to_csv(user.filepath, user.user_id, message_data)
     api_call_finished = True

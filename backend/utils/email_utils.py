@@ -3,13 +3,27 @@ import email
 import logging
 import re
 from typing import Dict, Any
+from contextlib import contextmanager
 
 from bs4 import BeautifulSoup
 from email_validator import validate_email, EmailNotValidError
 
-from constants import GENERIC_ATS_DOMAINS
+from constants import GENERIC_ATS_DOMAINS, APPLIED_FILTER_MANUAL_PATH
+
+from utils.llm_utils import process_email as process_email_llm
+from utils.filter_utils import load_filter_config, apply_override_filter
 
 logger = logging.getLogger(__name__)
+
+
+@contextmanager
+def disable_logging():
+    logging.disable(logging.CRITICAL)
+    try:
+        yield
+    finally:
+        logging.disable(logging.NOTSET)
+
 
 def clean_whitespace(text: str) -> str:
     """
@@ -384,3 +398,44 @@ def get_top_consecutive_capitalized_words(tuples_list):
     except Exception as e:
         logger.error("Error getting top consecutive capitalized words: %s", e)
     return ""
+
+
+def extract_company_name_from_subject(subject: str) -> str:
+    """
+    Extracts the company name from the subject line based on predefined regex patterns.
+    """
+    patterns = [
+        r"Your application was sent to ([\w\s]+)",
+        r".*(?:applying|applied) (?:to|at) ([\w\s]+)",
+        r".*Application to ([\w\s]+)",
+        r".*Interview with ([\w\s]+)",
+        r".*for your interest in ([A-Za-z]+)",
+        r".*about your application to ([\w\s]+)",
+        r".*received your ([\w\s]+) application*",
+        r".*Thank you from ([\w\s]+)",
+    ]
+
+    for pattern in patterns:
+        match = re.search(pattern, subject, re.IGNORECASE)
+        if match:
+            return match.group(1).strip()
+
+    return ""
+
+def parse_email(msg):
+    # if msg.get("id") in ["193b43a633daf245"]:
+    #     with disable_logging():
+    #         import pdb; pdb.set_trace()  # Set a breakpoint here
+
+    result = None
+    company_name = extract_company_name_from_subject(msg["subject"])  # manual override
+    if company_name:
+        result = {"company_name": company_name, "application_status": "no response"}    # rejection = no response atm
+        processor = "manual"
+    if result is None:
+        logger.info("subject: %s from: %s", msg["subject"], msg["from"])
+        result = process_email_llm(msg["text_content"])
+        processor = "llm"
+        
+
+    return result, processor

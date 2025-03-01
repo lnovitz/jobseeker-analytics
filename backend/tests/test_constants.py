@@ -191,6 +191,17 @@ SAMPLE_MESSAGE = {
     "internalDate": "1111111111000",
 }
 
+DESIRED_PASS_MANUAL_PARSE_SUBJECT_FROM_PAIRS = (
+    ("Thank you for applying!", "jobs@fictional-company1.com"),
+    ("Fake Company has an update on your application!", "jobs@fictional-company1.com"),
+    ("Thank you for applying!", "jobs@fictional-company2.com")
+)
+
+DESIRED_FAIL_MANUAL_PARSE_SUBJECT_FROM_PAIRS = (
+    ("Thank you for applying your pretty eyes to this worthless ad", "jobs@fictional-company1.com"),    
+    ("Hey Jobba check out these other jobs!", "jobs@fictional-company2.com")
+)
+
 DESIRED_PASS_APPLIED_EMAIL_FILTER_SUBJECT_FROM_PAIRS = (
     ("Thank you for your Application!", "do-not-reply@jobs.microsoft.com"),
     ("Jobba, your application was sent to The Huts", "jobs-noreply@linkedin.com")
@@ -204,10 +215,12 @@ DESIRED_FAIL_APPLIED_EMAIL_FILTER_SUBJECT_FROM_PAIRS = (
     ("you have new application updates this week", "jobs-noreply@linkedin.com"),
     ("Get career advice to guide you to success", "insights@careerseeker.accenture.com"),
     ("farewell and thank you from", "personalemail@domain.com"),
-    ("Verify your candidate account", "accenture@myworkday.com")
+    ("Verify your candidate account", "accenture@myworkday.com"),
+    ("Confirm your identity", "RecruitingNoReply@ford.com")
 )
 
 SAMPLE_FILTER_PATH = Path(__file__).parent / "sample_base_filter.yaml"
+SAMPLE_OVERRIDE_FILTER_PATH = Path(__file__).parent / "sample_override_filter.yaml"
 EXPECTED_SAMPLE_QUERY_STRING = '''(subject:"application has been submitted" 
     OR (subject:"application to" AND subject:"successfully submitted") 
     OR from:"do-not-reply@jobs.microsoft.com" 
