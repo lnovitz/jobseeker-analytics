@@ -24,6 +24,10 @@ export const Navbar = () => {
 		router.push(`${apiUrl}/logout`);
 	};
 
+	const handleGoogleLogout = async () => {
+		router.push("http://localhost:8000/logout");
+	};
+
 	return (
 		<HeroUINavbar maxWidth="xl" position="sticky">
 			<NavbarContent className="basis-1/5 sm:basis-full" justify="start">
@@ -69,10 +73,12 @@ export const Navbar = () => {
 			</NavbarContent>
 
 			{pathname === "/" && (
+
 				<NavbarItem className="hidden md:flex" data-testid="GoogleLogin">
 					<Button
 						className="text-sm font-normal text-default-600 bg-default-100"
 						data-testid="GoogleLogin"
+
 						startContent={<GoogleIcon className="text-danger" />}
 						variant="flat"
 						onPress={handleGoogleLogin}
