@@ -12,9 +12,10 @@ import { SunFilledIcon, MoonFilledIcon } from "@/components/icons";
 export interface ThemeSwitchProps {
 	className?: string;
 	classNames?: SwitchProps["classNames"];
+	children?: React.ReactNode;
 }
 
-export const ThemeSwitch: FC<ThemeSwitchProps> = ({ className, classNames }) => {
+export const ThemeSwitch: FC<ThemeSwitchProps> = ({ className, classNames, children }) => {
 	const { theme, setTheme } = useTheme();
 	const isSSR = useIsSSR();
 
@@ -45,7 +46,7 @@ export const ThemeSwitch: FC<ThemeSwitchProps> = ({ className, classNames }) => 
 							"w-auto h-auto",
 							"bg-transparent",
 							"rounded-lg",
-							"flex items-center justify-center",
+							"flex items-center justify-center gap-2", // Added gap for spacing
 							"group-data-[selected=true]:bg-transparent",
 							"!text-default-500",
 							"pt-px",
@@ -57,6 +58,7 @@ export const ThemeSwitch: FC<ThemeSwitchProps> = ({ className, classNames }) => 
 				})}
 			>
 				{!isSelected || isSSR ? <SunFilledIcon size={22} /> : <MoonFilledIcon size={22} />}
+				{children && <span className="text-default-600">{children}</span>}
 			</div>
 		</Component>
 	);
