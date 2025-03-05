@@ -1,6 +1,6 @@
 import logging
 from sqlmodel import Session, select
-from users import Users  # Adjust the import to your project structure
+from users import Users 
 
 logger = logging.getLogger(__name__)
 
