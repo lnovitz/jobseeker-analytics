@@ -82,8 +82,7 @@ export const Navbar = () => {
 				</NavbarItem>
 			)}
 
-			{/* Add for processing page too */}
-			{pathname === "/success" && (
+			{["/dashboard", "/success"].includes(pathname) && (
 				<NavbarItem className="hidden md:flex">
 					<Button
 						className="text-sm font-normal text-default-600 bg-default-100"
