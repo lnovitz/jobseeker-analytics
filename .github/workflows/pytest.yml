@@ -26,11 +26,7 @@ jobs:
           envkey_GOOGLE_API_KEY: your-api-key-here
           envkey_REDIRECT_URI: http://localhost:8000/login
           envkey_ENV: dev
-          envkey_DB_PORT: 5432
-          envkey_DB_HOST: your-db-host-here
-          envkey_DB_NAME: your-db-name-here
-          envkey_DB_USER: your-db-user-here
-          envkey_DB_PASSWORD: your-db-password-here
+          envkey_DATABASE_URL: postgresql://postgres:postgres@db:5432/jobseeker_analytics
           envkey_CLIENT_SECRETS_FILE: "credentials.json"
           envkey_APP_URL: http://localhost:3000
           directory: backend

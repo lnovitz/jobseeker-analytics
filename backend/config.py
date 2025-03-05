@@ -15,14 +15,10 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_ID: str
     GOOGLE_API_KEY: str
     COOKIE_SECRET: str
-    DB_HOST: str
-    DB_USER: str
-    DB_PASSWORD: str
-    DB_NAME: str
-    DB_PORT: int
     CLIENT_SECRETS_FILE: str = "credentials.json"
     ENV: str = "dev"
     APP_URL: str
+    DATABASE_URL: str
 
     @field_validator("GOOGLE_SCOPES", mode="before")
     @classmethod

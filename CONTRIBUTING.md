@@ -100,6 +100,7 @@ docker-compose up --build
 ```
 3. Then, visit [http://localhost:3000](http://localhost:3000) to begin testing the app locally.
 
+You can view logs from the app by finding your container in Docker Desktop/Docker Engine and clicking on it. The app will automatically refresh when you make changes. 
 
 #### Option 2: Virtual Environment
 
@@ -121,6 +122,12 @@ Once your `.env` file is set up, start the app by following the instructions bel
    pip install -r backend/requirements.txt
    cd frontend && npm install
    ```
+3. Start the PostgreSQL database:
+   - Ensure Docker is installed and running.
+   - Use Docker to start the PostgreSQL database:
+     ```bash
+     docker run --name jobseeker-db -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=jobseeker_analytics -p 5433:5432 -d postgres:13
+     ```
 4. Run backend and frontend apps:
    In one terminal window, run:
    ```bash
@@ -130,13 +137,64 @@ Once your `.env` file is set up, start the app by following the instructions bel
    ```bash
    cd frontend && npm run dev
    ```
-6. Check it out @:
+5. Check it out @:
    http://127.0.0.1:8000
    
 Then, visit `http://localhost:8000/login` to test the authentication flow.  
 
-You can view logs from the app by finding your container in Docker Desktop/Docker Engine and clicking on it. The app will automatically refresh when you make changes. 
 ---
+
+
+### Inspect the Database with DBeaver
+
+To inspect your PostgreSQL database running in Docker, follow these steps:
+
+1. **Install DBeaver**:
+   - Go to the [DBeaver download page](https://dbeaver.io/download/).
+   - Download and install the appropriate version for your operating system (Windows, macOS, or Linux).
+
+2. **Start Docker Services (if you haven't already)**:
+   - Ensure your Docker services are running using the following command:
+     ```bash
+     docker-compose up --build
+     ```
+
+3. **Create a New Database Connection in DBeaver (if this is your first time opening DBeaver for this project)**:
+   - Open DBeaver.
+   - - Note: you may need to Download SQLLite driver files - Driver settings window will prompt you.
+   - Click on the `Database` menu and select `New Database Connection`.
+   - Select `PostgreSQL` and click `Next`.
+
+4. **Enter Connection Details**:
+   - **Host**: `localhost`
+   - **Port**: `5433` (as specified in your `docker-compose.yaml` file)
+   - **Database**: `jobseeker_analytics`
+   - **Username**: `postgres`
+   - **Password**: `postgres`
+   - Click on the `Test Connection` button to ensure the connection is successful.
+   - Note: you may need to Download PostgreSQL driver files - Driver settings window will prompt you.
+
+5. **Save the Connection**:
+   - If the connection test is successful, click `Finish` to save the connection.
+   - If the connection test fails, double-check the connection details and ensure that your Docker services are running.
+
+6. **Inspect the Database**:
+   - In the `Database Navigator` pane on the left side of DBeaver, expand the `PostgreSQL` node.
+   - Expand the `jobseeker_analytics` node to see the available schemas and tables.
+   - Right-click on a table (e.g., `test_table`) and select `View Data` to see the data in the table.
+
+7. **Open the Playground Page**:
+   - Open your browser and navigate to `http://localhost:3000/playground`.
+
+8. **Insert a Record**:
+   - Use the form on the playground page to insert a new record by entering a name and clicking "Insert Data".
+   - Observe the changes in DBeaver. You should see the new record appear in the `test_table`.
+
+9. **Delete All Records**:
+   - Click the "Delete All Data" button on the playground page to delete all records.
+   - Observe the changes in DBeaver. You should see the records being removed from the `test_table`.
+
+
 
 ### Troubleshooting Tips
 - **Not redirected after login?**  

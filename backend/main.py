@@ -26,6 +26,9 @@ from session.session_layer import validate_session
 # Import Google login routes
 from login.google_login import router as google_login_router
 
+from pydantic import BaseModel
+from sqlmodel import SQLModel, create_engine, Session, Field, select
+
 app = FastAPI()
 settings = get_settings()
 APP_URL = settings.APP_URL
@@ -34,7 +37,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=APP_URL,  # Allow frontend origins
+    allow_origins=[APP_URL],  # Allow frontend origins
     allow_credentials=True,
     allow_methods=["*"],  # Allow all HTTP methods (GET, POST, etc.)
     allow_headers=["*"],  # Allow all headers
@@ -47,6 +50,45 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG, format="%(levelname)s - %(message)s")
 
 api_call_finished = False
+
+# Database setup
+DATABASE_URL = settings.DATABASE_URL
+engine = create_engine(DATABASE_URL)
+
+
+class TestTable(SQLModel, table=True):
+    id: int = Field(default=None, primary_key=True)
+    name: str
+    __tablename__ = "test_table"
+
+
+SQLModel.metadata.create_all(engine)
+
+
+class TestData(BaseModel):
+    name: str
+
+
+if settings.ENV == "dev":
+
+    @app.post("/insert")
+    def insert_data(data: TestData):
+        with Session(engine) as session:
+            test_entry = TestTable(name=data.name)
+            session.add(test_entry)
+            session.commit()
+            session.refresh(test_entry)
+            return {"message": "Data inserted successfully", "id": test_entry.id}
+
+    @app.delete("/delete")
+    def delete_data():
+        with Session(engine) as session:
+            statement = select(TestTable)
+            results = session.exec(statement)
+            for test_entry in results:
+                session.delete(test_entry)
+            session.commit()
+            return {"message": "All data deleted successfully"}
 
 
 @app.get("/")

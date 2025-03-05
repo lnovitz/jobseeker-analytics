@@ -48,6 +48,7 @@ pluggy==1.5.0
 preshed==3.0.9
 proto-plus==1.25.0
 protobuf==5.29.2
+psycopg2==2.9.10
 pyasn1==0.6.1
 pyasn1_modules==0.4.1
 pydantic==2.10.4
@@ -60,7 +61,7 @@ pytest==8.3.4
 python-dateutil==2.9.0.post0
 python-dotenv==1.0.1
 pytz==2024.2
-pyYAML==6.0.2
+PyYAML==6.0.2
 requests==2.32.3
 requests-oauthlib==2.0.0
 rich==13.9.4
@@ -76,6 +77,8 @@ spacy-cleaner==3.2.1
 spacy-legacy==3.0.12
 spacy-loggers==1.0.5
 spacy-lookups-data==1.0.5
+SQLAlchemy==2.0.38
+sqlmodel==0.0.23
 srsly==2.5.0
 starlette==0.41.3
 thinc==8.2.5
