@@ -1,13 +1,13 @@
 import logging
 from sqlmodel import Session, select
-from db.users import Users  # Adjust the import to your project structure
+from users import Users  # Adjust the import to your project structure
 
 logger = logging.getLogger(__name__)
 
 def add_user(user, session: Session) -> Users:
     """
     Writes user data to the users model upon login.
-    
+
     """
     # check if the user already exists in the database
     existing_user = session.exec(select(Users).where(Users.user_id == user.user_id)).first()
