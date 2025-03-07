@@ -21,9 +21,6 @@ router = APIRouter()
 
 @router.get("/login")
 async def login(request: Request, background_tasks: BackgroundTasks):
-    """Handles Google OAuth2 login and authorization code exchange."""
-    from main import fetch_emails  # Move the import here to avoid circular import
-
     code = request.query_params.get("code")
     flow = Flow.from_client_secrets_file(
         settings.CLIENT_SECRETS_FILE,
@@ -33,16 +30,13 @@ async def login(request: Request, background_tasks: BackgroundTasks):
 
     try:
         if not code:
-            logger.info("No code in request, redirecting to authorization URL")
             authorization_url, state = flow.authorization_url(prompt="consent")
             return RedirectResponse(url=authorization_url)
 
-        logger.info("Authorization code received, exchanging for token...")
         flow.fetch_token(code=code)
         creds = flow.credentials
 
         if not creds.valid:
-            logger.info("Invalid credentials, refreshing...")
             creds.refresh(Request())
             return RedirectResponse("/login", status_code=303)
 
@@ -60,17 +54,15 @@ async def login(request: Request, background_tasks: BackgroundTasks):
 
         request.session["token_expiry"] = token_expiry
         request.session["user_id"] = user.user_id
+        request.session["creds"] = creds.to_json() 
 
-        response = RedirectResponse(
-            url=f"{settings.APP_URL}/processing", status_code=303
-        )
+        response = RedirectResponse(url=f"{settings.APP_URL}/dashboard?user_id={user.user_id}", status_code=303)
         response.set_cookie(
             key="Authorization", value=session_id, secure=True, httponly=True
         )
 
-        # Start email fetching in the background
-        background_tasks.add_task(fetch_emails, user)
-        logger.info("Background task started for user_id: %s", user.user_id)
+        logger.info("User logged in with user_id: %s", user.user_id)
+        logger.info(f"Session after login: {request.session}")  # Debugging
 
         return response
     except Exception as e:
