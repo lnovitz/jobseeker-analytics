@@ -171,19 +171,17 @@ def fetch_emails_to_db(user: AuthenticatedUser) -> None:
                     )
 
             message_data = {
-                "company_name": [result.get("company_name", "")],
-                "application_status": [result.get("application_status", "")],
-                "received_at": [msg.get("date", "")],
-                "subject": [msg.get("subject", "")],
-                "from": [msg.get("from", "")],
+                "id": msg_id,
+                "company_name": result.get("company_name", ""), 
+                "application_status": result.get("application_status", ""), 
+                "received_at": msg.get("date", ""),
+                "subject": msg.get("subject", ""), 
+                "from": msg.get("from", ""), 
             }
 
-            # expose the message id on the dev environment
-            if settings.ENV == "dev":
-                message_data["id"] = [msg_id]
-            # write all the user application data into the user_email model
             email_record = create_user_email(user, message_data)
-            email_records.append(email_record)
+            if email_record:
+                email_records.append(email_record)
 
         # batch insert all records at once
         if email_records:
