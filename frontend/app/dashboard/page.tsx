@@ -3,10 +3,10 @@
 import React, { useState, useEffect } from "react";
 import { Table, TableHeader, TableBody, TableColumn, TableRow, TableCell } from "@heroui/table";
 import { useRouter } from "next/navigation";
-import { Button } from "@heroui/react";
+import { Button, Dropdown, DropdownItem, DropdownMenu, DropdownSection, DropdownTrigger } from "@heroui/react";
 import { addToast } from "@heroui/toast";
 
-import { DownloadIcon } from "@/components/icons";
+import { DownloadIcon, SortIcon } from "@/components/icons";
 
 interface Application {
 	id?: string;
@@ -23,7 +23,15 @@ export default function Dashboard() {
 	const [loading, setLoading] = useState(true);
 	const [downloading, setDownloading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+	const [sortedData, setSortedData] = useState<Application[]>([]);
+
+	// Load sort key from localStorage or use default "Sort By"
+	const storedSortKey =
+		typeof window !== "undefined" ? localStorage.getItem("sortKey") || "Date (Newest)" : "Date (Newest)";
+	const [selectedKeys, setSelectedKeys] = useState(new Set([storedSortKey]));
+
 	const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+	const selectedValue = React.useMemo(() => Array.from(selectedKeys).join(", ").replace(/_/g, ""), [selectedKeys]);
 
 	useEffect(() => {
 		const fetchData = async () => {
@@ -58,6 +66,43 @@ export default function Dashboard() {
 
 		fetchData();
 	}, [router]);
+
+	// Sort data based on selected key
+	useEffect(() => {
+		const sortData = () => {
+			let sorted = [...data];
+			const sortKey = Array.from(selectedKeys)[0];
+
+			switch (sortKey) {
+				case "Date (Newest)":
+					sorted.sort((a, b) => new Date(b.received_at).getTime() - new Date(a.received_at).getTime());
+					break;
+				case "Date (Oldest)":
+					sorted.sort((a, b) => new Date(a.received_at).getTime() - new Date(b.received_at).getTime());
+					break;
+				case "Company":
+					sorted.sort((a, b) => a.company_name.localeCompare(b.company_name));
+					break;
+				case "Status":
+					sorted.sort((a, b) => a.application_status.localeCompare(b.application_status));
+					break;
+				default:
+					break;
+			}
+			setSortedData(sorted);
+		};
+
+		if (data.length > 0) {
+			sortData();
+		}
+	}, [selectedKeys, data]);
+
+	// Handle sorting selection change and store it in localStorage
+	const handleSortChange = (keys: Set<string>) => {
+		const sortKey = Array.from(keys)[0];
+		localStorage.setItem("sortKey", sortKey);
+		setSelectedKeys(new Set([sortKey]));
+	};
 
 	async function downloadCsv() {
 		setDownloading(true);
@@ -112,8 +157,37 @@ export default function Dashboard() {
 			<div className="flex items-center justify-between mb-4">
 				<h1 className="text-2xl font-bold">Job Applications Dashboard</h1>
 				<div className="flex gap-x-4">
+					<Dropdown>
+						<DropdownTrigger>
+							<Button
+								className="pl-3"
+								color="primary"
+								isDisabled={!data || data.length === 0}
+								startContent={<SortIcon />}
+								variant="bordered"
+							>
+								{selectedValue}
+							</Button>
+						</DropdownTrigger>
+						<DropdownMenu
+							disallowEmptySelection
+							aria-label="Single selection example"
+							selectedKeys={selectedKeys}
+							selectionMode="single"
+							variant="flat"
+							onSelectionChange={(keys) => handleSortChange(keys as Set<string>)}
+						>
+							<DropdownSection title="Sort By">
+								<DropdownItem key="Date (Newest)">Date Received (Newest First)</DropdownItem>
+								<DropdownItem key="Date (Oldest)">Date Received (Oldest First)</DropdownItem>
+								<DropdownItem key="Company">Company (A-Z)</DropdownItem>
+								<DropdownItem key="Status">Application Status</DropdownItem>
+							</DropdownSection>
+						</DropdownMenu>
+					</Dropdown>
 					<Button
 						color="success"
+						isDisabled={!data || data.length === 0}
 						isLoading={downloading}
 						startContent={<DownloadIcon />}
 						onPress={downloadCsv}
@@ -143,7 +217,7 @@ export default function Dashboard() {
 							<TableColumn>Sender</TableColumn>
 						</TableHeader>
 						<TableBody>
-							{data.map((item) => (
+							{sortedData.map((item) => (
 								<TableRow key={item.id || item.received_at}>
 									<TableCell>{item.company_name || "--"}</TableCell>
 									<TableCell>
