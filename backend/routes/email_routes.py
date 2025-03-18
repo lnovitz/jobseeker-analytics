@@ -8,6 +8,7 @@ from googleapiclient.discovery import build
 from constants import QUERY_APPLIED_EMAIL_FILTER
 from db.user_email import UserEmail
 from db.utils.user_email_utils import create_user_email
+from db.utils.companies_utils import company_exists, add_company
 from utils.auth_utils import AuthenticatedUser
 from utils.email_utils import get_email_ids, get_email
 from utils.llm_utils import process_email
@@ -176,7 +177,7 @@ def fetch_emails_to_db(user: AuthenticatedUser) -> None:
                 "received_at": [msg.get("date", "")],
                 "subject": [msg.get("subject", "")],
                 "from": [msg.get("from", "")],
-            }
+            }                 
 
             # expose the message id on the dev environment
             if settings.ENV == "dev":
@@ -184,6 +185,14 @@ def fetch_emails_to_db(user: AuthenticatedUser) -> None:
             # write all the user application data into the user_email model
             email_record = create_user_email(user, message_data)
             email_records.append(email_record)
+
+            company_name = email_record.company_name
+            company_email_domain = email_record.email_from
+
+            # Add company to the database if it doesn't exist
+            if company_name and company_email_domain:
+                if not company_exists(company_name, company_email_domain):
+                    company = add_company(company_name, company_email_domain)
 
         # batch insert all records at once
         if email_records:
