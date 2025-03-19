@@ -7,6 +7,7 @@ import { Button, Dropdown, DropdownItem, DropdownMenu, DropdownSection, Dropdown
 import { addToast } from "@heroui/toast";
 
 import { DownloadIcon, SortIcon } from "@/components/icons";
+import { checkAuth } from "@/utils/auth";
 
 interface Application {
 	id?: string;
@@ -37,6 +38,18 @@ export default function Dashboard() {
 	useEffect(() => {
 		const fetchData = async () => {
 			try {
+				// Check if user is logged in
+				const isAuthenticated = await checkAuth(apiUrl);
+				if (!isAuthenticated) {
+					addToast({
+						title: "You need to be logged in to access this page.",
+						color: "warning"
+					});
+					router.push("/");
+					return;
+				}
+
+				// Fetch applicaions (if user is logged in)
 				const response = await fetch(`${apiUrl}/get-emails`, {
 					method: "GET",
 					credentials: "include" // Include cookies for session management

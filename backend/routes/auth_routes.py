@@ -1,12 +1,12 @@
 import datetime
 import logging
-from fastapi import APIRouter, Request, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, Request, BackgroundTasks
 from fastapi.responses import RedirectResponse, HTMLResponse
 from google_auth_oauthlib.flow import Flow
 
 from db.utils.user_utils import user_exists, add_user
 from utils.auth_utils import AuthenticatedUser
-from session.session_layer import create_random_session_string
+from session.session_layer import create_random_session_string, validate_session
 from utils.config_utils import get_settings
 from utils.cookie_utils import set_conditional_cookie
 
@@ -98,3 +98,12 @@ async def logout(request: Request, response: RedirectResponse):
     response.delete_cookie(key="__Secure-Authorization")
     response.delete_cookie(key="Authorization")
     return RedirectResponse(f"{APP_URL}", status_code=303)
+
+
+@router.get("/me")
+async def getUser(request: Request, user_id: str = Depends(validate_session)):
+    if not user_id:
+        raise HTTPException(
+            status_code=401, detail="No user id found in session"
+        )    
+    return {"user_id": user_id}
