@@ -32,6 +32,7 @@ idna==3.10
 iniconfig==2.0.0
 itsdangerous==2.2.0
 Jinja2==3.1.5
+joblib==1.4.2
 langcodes==3.5.0
 language_data==1.3.0
 logger==1.4
@@ -44,6 +45,7 @@ murmurhash==1.0.11
 numpy==1.26.4
 oauthlib==3.2.2
 packaging==24.2
+pandas==2.2.2
 pluggy==1.5.0
 preshed==3.0.9
 proto-plus==1.25.0
@@ -67,6 +69,8 @@ requests-oauthlib==2.0.0
 rich==13.9.4
 rsa==4.9
 ruff==0.9.5
+scikit-learn==1.5.0
+sentence-transformers==3.4.1
 shellingham==1.5.4
 six==1.17.0
 smart-open==7.1.0
