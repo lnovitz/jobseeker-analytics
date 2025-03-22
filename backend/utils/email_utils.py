@@ -3,6 +3,7 @@ import email
 import logging
 import re
 from typing import Dict, Any
+import datetime
 
 from bs4 import BeautifulSoup
 from email_validator import validate_email, EmailNotValidError
@@ -82,77 +83,95 @@ def get_email_content(email_data: Dict[str, Any]) -> str:
     return text_content
 
 
-def get_email(message_id: str, gmail_instance=None):
-    if gmail_instance:
-        try:
+def get_email(message_id: str = None, gmail_instance=None, raw_message=None):
+    """
+    Parse an email from either Gmail API or raw email content.
+    
+    Args:
+        message_id (str, optional): Gmail message ID when using Gmail API
+        gmail_instance (object, optional): Gmail API service instance
+        raw_message (dict, optional): Raw message containing either Gmail API raw format or direct email content
+            - If from Gmail API: {"raw": base64_encoded_string}
+            - If direct email: {"raw": base64_encoded_string, "message_id": optional_id}
+    
+    Returns:
+        dict: Parsed email data with standardized structure
+    """
+    try:
+        # Initialize empty email data structure
+        email_data = {
+            "id": message_id,  # Will be overridden for raw messages
+            "threadId": None,
+            "from": None,
+            "to": None,
+            "subject": None,
+            "date": None,
+            "text_content": None,
+            "html_content": None,
+        }
+
+        # Handle Gmail API message
+        if gmail_instance and message_id:
             message = (
                 gmail_instance.users()
                 .messages()
                 .get(userId="me", id=message_id, format="raw")
                 .execute()
             )
-            msg_str = base64.urlsafe_b64decode(message["raw"].encode("ASCII")).decode(
-                "utf-8"
-            )
+            msg_str = base64.urlsafe_b64decode(message["raw"].encode("ASCII")).decode("utf-8")
             mime_msg = email.message_from_string(msg_str)
-            # logger.info("mime_msg: %s", mime_msg)
-            # logger.info("msg_str: %s", msg_str)
-            email_data = {
-                "id": message_id,
-                "threadId": message.get("threadId", None),
-                "from": None,
-                "to": None,
-                "subject": None,
-                "date": None,
-                "text_content": None,
-                "html_content": None,
-            }
-
-            # Getting email headers
-            email_data["from"] = clean_whitespace(mime_msg.get("From"))
-            email_data["to"] = clean_whitespace(mime_msg.get("To"))
-            email_data["subject"] = clean_whitespace(mime_msg.get("Subject"))
-            email_data["date"] = mime_msg.get("Date")
-
-            # Extract body of the email
-            if mime_msg.is_multipart():
-                for part in mime_msg.walk():
-                    content_type = part.get_content_type()
-                    content_disposition = str(part.get("Content-Disposition"))
-                    if (
-                        content_type == "text/plain"
-                        and "attachment" not in content_disposition
-                    ):
-                        email_data["text_content"] = part.get_payload(
-                            decode=True
-                        ).decode(encoding="utf-8", errors="ignore")
-                    elif (
-                        content_type == "text/html"
-                        and "attachment" not in content_disposition
-                    ):
-                        email_data["html_content"] = part.get_payload(
-                            decode=True
-                        ).decode(encoding="utf-8", errors="ignore")
+            email_data["threadId"] = message.get("threadId", None)
+        
+        # Handle raw message
+        elif raw_message:
+            if isinstance(raw_message, dict) and "raw" in raw_message:
+                msg_str = base64.b64decode(raw_message["raw"]).decode("utf-8")
+                mime_msg = email.message_from_string(msg_str, policy=email.policy.default)
+                # Override message_id if provided in raw_message
+                if "message_id" in raw_message:
+                    email_data["id"] = raw_message["message_id"]
+                else:
+                    # Try to get Message-ID from headers, fallback to timestamp
+                    email_data["id"] = mime_msg["Message-ID"] or f"FWD-{datetime.utcnow().timestamp()}"
             else:
-                content_type = mime_msg.get_content_type()
-                if content_type == "text/plain":
-                    email_data["text_content"] = mime_msg.get_payload(
-                        decode=True
-                    ).decode(encoding="utf-8", errors="ignore")
-                elif content_type == "text/html":
-                    email_data["html_content"] = mime_msg.get_payload(
-                        decode=True
-                    ).decode(encoding="utf-8", errors="ignore")
-
-            email_data["raw_text_content"] = email_data["text_content"]
-            email_data["text_content"] = get_email_content(email_data)
-
-            return email_data
-
-        except Exception as e:
-            logger.exception(f"Error retrieving email with id {message_id}: {e}")
+                logger.error("Invalid raw_message format")
+                return {}
+        else:
+            logger.error("Neither Gmail API nor raw message provided")
             return {}
-    return {}
+
+        # Extract headers
+        email_data["from"] = clean_whitespace(mime_msg.get("From", ""))
+        email_data["to"] = clean_whitespace(mime_msg.get("To", ""))
+        email_data["subject"] = clean_whitespace(mime_msg.get("Subject", ""))
+        email_data["date"] = mime_msg.get("Date")
+
+        # Extract body
+        if mime_msg.is_multipart():
+            for part in mime_msg.walk():
+                content_type = part.get_content_type()
+                content_disposition = str(part.get("Content-Disposition"))
+                if content_type == "text/plain" and "attachment" not in content_disposition:
+                    email_data["text_content"] = part.get_payload(decode=True).decode(encoding="utf-8", errors="ignore")
+                elif content_type == "text/html" and "attachment" not in content_disposition:
+                    email_data["html_content"] = part.get_payload(decode=True).decode(encoding="utf-8", errors="ignore")
+        else:
+            content_type = mime_msg.get_content_type()
+            if content_type == "text/plain":
+                email_data["text_content"] = mime_msg.get_payload(decode=True).decode(encoding="utf-8", errors="ignore")
+            elif content_type == "text/html":
+                email_data["html_content"] = mime_msg.get_payload(decode=True).decode(encoding="utf-8", errors="ignore")
+
+        # Store raw text content before processing
+        email_data["raw_text_content"] = email_data["text_content"]
+        # Get combined content
+        email_data["text_content"] = get_email_content(email_data)
+
+        return email_data
+
+    except Exception as e:
+        logger.exception(f"Error processing email: {e}")
+        return {}
 
 
 def get_email_ids(query: tuple = None, gmail_instance=None):
@@ -246,8 +265,6 @@ def get_email_from_address(msg):
 
 
 def get_received_at_timestamp(message_id, msg):
-    import datetime
-
     try:
         email_headers = get_email_headers(msg)
         if email_headers:

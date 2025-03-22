@@ -12,16 +12,17 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
+from contextlib import asynccontextmanager
+
 from db.users import UserData
 from db.utils.user_utils import add_user
 from utils.file_utils import get_user_filepath
 from utils.config_utils import get_settings
 from session.session_layer import validate_session
-from contextlib import asynccontextmanager
 from database import create_db_and_tables
 
 # Import routes
-from routes import playground_routes, email_routes, auth_routes, file_routes, users_routes
+from routes import playground_routes, email_routes, auth_routes, file_routes, users_routes, email_webhook
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -40,6 +41,7 @@ app.include_router(playground_routes.router)
 app.include_router(email_routes.router)
 app.include_router(file_routes.router)
 app.include_router(users_routes.router)
+app.include_router(email_webhook.router, prefix="/api/v1", tags=["email"])
 
 limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter  # Ensure limiter is assigned
