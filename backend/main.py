@@ -41,7 +41,7 @@ app.include_router(playground_routes.router)
 app.include_router(email_routes.router)
 app.include_router(file_routes.router)
 app.include_router(users_routes.router)
-app.include_router(email_webhook.router, prefix="/api/v1", tags=["email"])
+app.include_router(email_webhook.router, prefix="/api/v1")
 
 limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter  # Ensure limiter is assigned
@@ -91,6 +91,13 @@ async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
         status_code=429,
         detail="Too many requests. Please try again later.",
     )
+
+
+@app.get("/ping")
+@limiter.limit("1/minute")
+def ping(request: Request):
+    """Test endpoint to verify the server is running"""
+    return {"status": "success", "message": "Server is running"}
 
 
 @app.post("/api/add-user")
