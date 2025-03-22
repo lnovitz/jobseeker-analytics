@@ -1,5 +1,7 @@
 "use client";
+import { addToast, Button } from "@heroui/react";
 import Head from "next/head";
+import { useRouter } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import ReCAPTCHA from "react-google-recaptcha";
 
@@ -11,12 +13,31 @@ export default function Home() {
 	const [successMessage, setSuccessMessage] = useState("");
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [formSubmitted, setFormSubmitted] = useState(false);
+	const [loading, setLoading] = useState(false);
+	const router = useRouter();
 
 	// Dark mode detection
 	const [isDarkMode, setIsDarkMode] = useState(false);
 
 	// ReCAPTCHA reference
 	const recaptchaRef = useRef<ReCAPTCHA>(null);
+
+	// Handle preview
+	function tryPreview() {
+		setLoading(true);
+		addToast({
+			title: "Previewing the app...",
+			description: "Simulating Google Login",
+			timeout: 2000,
+			color: "success",
+			shouldShowTimeoutProgress: true
+		});
+
+		setTimeout(() => {
+			setLoading(false);
+			router.push("/preview/processing");
+		}, 2000);
+	}
 
 	// Check for dark mode on mount
 	useState(() => {
@@ -321,7 +342,17 @@ export default function Home() {
 						</form>
 					) : null}
 				</div>
-
+				<div className="mb-10 p-6 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm">
+					<h2 className="text-2xl font-bold mb-3 text-gray-900 dark:text-white">
+						Want to see what the app is like?
+					</h2>
+					<p className="mb-4 text-gray-600 dark:text-gray-300">
+						Click the button below to simulate the app using sample data
+					</p>
+					<Button color="primary" isLoading={loading} variant="ghost" onPress={tryPreview}>
+						Try it out
+					</Button>
+				</div>
 				<h2 className="text-2xl font-bold mt-6 mb-4 text-gray-900 dark:text-white">Resources</h2>
 
 				<div className="space-y-4">
