@@ -10,7 +10,7 @@ from db.user_email import UserEmail
 from db.utils.user_email_utils import create_user_email
 from utils.auth_utils import AuthenticatedUser
 from utils.email_utils import get_email_ids, get_email
-from utils.llm_utils import process_email
+from utils.minilm_utils import process_email
 from utils.db_utils import export_to_csv
 from utils.config_utils import get_settings
 from session.session_layer import validate_session
