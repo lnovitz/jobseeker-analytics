@@ -4,12 +4,6 @@ from db.companies import Companies
 
 logger = logging.getLogger(__name__)
 
-def get_company_size(company_name: str) -> int:
-    """
-    Returns the size of the company.
-    """
-    return 1
-
 def company_exists(company_name: str, company_email_domain: str) -> bool:
     """
     Returns True if the company exists in the database, False otherwise.
@@ -41,8 +35,7 @@ def add_company(company_name: str, company_email_domain: str) -> Companies:
             # add a new company record
             new_company = Companies(
                 company_name=company_name,
-                company_email_domain=company_email_domain,
-                company_size=get_company_size(company_name)
+                company_email_domain=company_email_domain
             )
 
             session.add(new_company)

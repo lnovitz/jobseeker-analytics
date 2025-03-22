@@ -192,7 +192,7 @@ def fetch_emails_to_db(user: AuthenticatedUser) -> None:
             # Add company to the database if it doesn't exist
             if company_name and company_email_domain:
                 if not company_exists(company_name, company_email_domain):
-                    company = add_company(company_name, company_email_domain)
+                    add_company(company_name, company_email_domain)
 
         # batch insert all records at once
         if email_records:

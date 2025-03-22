@@ -7,7 +7,6 @@ class Companies(SQLModel, table=True):
     company_id: int = Field(sa_column=Column(Integer, primary_key=True, autoincrement=True))
     company_name: str
     company_email_domain: str
-    company_size: int
 
     __table_args__ = (
         # Ensure that company_name and company_email_domain together are unique
