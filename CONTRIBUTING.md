@@ -1,39 +1,20 @@
 # Welcome!
 
-Whether this is your first open-source project or you are a veteran contributor, we are happy to see you. This document is the single source of truth for how to contribute to the code base. You'll be able to pick up issues, write code to fix them, and get your work reviewed and merged. Feel free to browse the [open issues](https://github.com/lnovitz/jobseeker-analytics/issues). All feedback are welcome.
+Whether this is your first time downloading code or the gazillionth time cloning a repo, we are happy to see you. 
 
-Thank you for taking the time to contribute! 🎉
+Here you will learn how to install the app directly on your personal computer. 
 
-## Code of Conduct
+Once the app is installed, you'll be able to gain full access to all the features. 
 
-<details>
-<summary> Please make sure to read and observe the <a href="">Code of Conduct</a></summary>
+If you are a current or aspiring developer, you can pick up [open issues](https://github.com/lnovitz/jobseeker-analytics/issues), write code to fix them, and get your work reviewed and merged. Comment on an issue if you'd like to try resolving it.
 
-We aim to make participation in this project and in the community a harassment-free experience for everyone.
+If you're not an aspiring developer, that's totally ok. 
 
-### Examples of behavior that contributes to positive environment
+Keep reading to install the app. 
 
-- Use welcoming and inclusive language
-- Be respectful of other viewpoints and experiences
-- Accept constructive criticism gracefully
-- Focus on what is best for the community
-- Show empathy towards others
+You may run into issues - email help@jobba.help for help :)
 
-### Examples of unacceptable behavior
-
-- Use of sexualized language or imagery
-- Trolling, insulting, derogatory comments and political attacks
-- Public or private harassment
-- Publishing other's private information or illegal information/documents
-- Other conduct which could be reasonably considered inappropriate
-
-This Code of Conduct applies to both within project spaces and in public spaces when an individual is representing the project or its community. By participating, you are expected to uphold this code. Please report unacceptable behavior.
-
-</details>
-
-## How Can I Contribute?
-
-This project uses **Google OAuth** for authentication. To run the app locally, you’ll need to configure your own Google API credentials.  
+## How can I install the app directly on my computer?
 
 ### Clone the repo
 1. On Windows: We recommend that you use WSL2. [Installation instructions here](https://learn.microsoft.com/en-us/windows/wsl/). 
@@ -92,6 +73,10 @@ This project uses **Google OAuth** for authentication. To run the app locally, y
 docker-compose up --build
 ```
 3. Then, visit [http://localhost:3000](http://localhost:3000) to begin testing the app locally.
+4. Troubleshooting:
+   - Attempted import error
+      - `cd frontend`
+      - `npm ci`
 
 You can view logs from the app by finding your container in Docker Desktop/Docker Engine and clicking on it. The app will automatically refresh when you make changes. 
 
@@ -268,3 +253,26 @@ Bugs are tracked as [GitHub issues](https://docs.github.com/en/issues/tracking-y
 - Describe the behavior you observed after following the steps.
 - Include screenshots and/or animated GIFs when possible.
 - If the problem wasn't triggered by a specific action, describe what you were doing before the problem occurred.
+
+## Code of Conduct
+
+We aim to make participation in this project and in the community a harassment-free experience for everyone.
+
+### Examples of behavior that contributes to positive environment
+
+- Use welcoming and inclusive language
+- Be respectful of other viewpoints and experiences
+- Accept constructive criticism gracefully
+- Focus on what is best for the community
+- Show empathy towards others
+
+### Examples of unacceptable behavior
+
+- Use of sexualized language or imagery
+- Trolling, insulting, derogatory comments and political attacks
+- Public or private harassment
+- Publishing other's private information or illegal information/documents
+- Other conduct which could be reasonably considered inappropriate
+
+This Code of Conduct applies to both within project spaces and in public spaces when an individual is representing the project or its community. By participating, you are expected to uphold this code. Please report unacceptable behavior.
+

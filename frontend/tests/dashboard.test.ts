@@ -2,7 +2,6 @@ import { test, expect } from "@playwright/test";
 
 test.describe("Dashboard", () => {
 	const DASHBOARD_URL = "http://localhost:3000/dashboard";
-	const EXPECTED_DOWNLOAD_URL = "http://localhost:8000/download-file";
 
 	test.beforeEach(async ({ page }) => {
 		await page.goto(DASHBOARD_URL);

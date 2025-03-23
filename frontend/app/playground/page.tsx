@@ -19,7 +19,7 @@ const Playground = () => {
 
 	const handleInsert = async (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
-		const name = (event.target as any).name.value;
+		const name = event.target;
 		const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/insert`, {
 			method: "POST",
 			headers: {

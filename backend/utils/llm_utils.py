@@ -10,7 +10,7 @@ settings = get_settings()
 
 # Configure Google Gemini API
 genai.configure(api_key=settings.GOOGLE_API_KEY)
-model = genai.GenerativeModel("gemini-1.5-flash-8b")
+model = genai.GenerativeModel("gemini-2.0-flash-lite")
 logger = logging.getLogger(__name__)
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -20,16 +20,16 @@ logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
-
 def process_email(email_text):
     prompt = f"""
-        Extract the company name and job application status from the following email. 
+        Extract the company name, job application status, and job title (role) from the following email. 
         Job application status can be a value from the following list:
         ["rejected", "no response", "request for availability", "interview scheduled", "offer"]
         Note that "no response" means that there is only a neutral, automated or human confirmation of the application being received.
         Note that "interview scheduled" implies a calendar invite with a meeting date and time has been sent.
         Note that "request for availability" implies waiting on the candidate to provide their availability.
-        Provide the output in JSON format, for example:  "company_name": "company_name", "application_status": "status" 
+        Note that job_title is the role that the user is applying for Ex: "Software Engineer", "Product Engineer", "Data Analyst"
+        Provide the output in JSON format, for example:  "company_name": "company_name", "application_status": "status", "job_title": "job_title"
         Remove backticks. Only use double quotes. Enclose key and value pairs in a single pair of curly braces.
         If the email is obviously not related to a job application, return an empty pair of curly braces like this {{}}
         Email: {email_text}
@@ -67,12 +67,10 @@ def process_email(email_text):
                 logger.warning(
                     f"Rate limit hit. Retrying in {delay} seconds (attempt {attempt + 1})."
                 )
-                logger.warning(
-                    f"Rate limit hit. Retrying in {delay} seconds (attempt {attempt + 1})."
-                )
                 time.sleep(delay)
             else:
-                logger.exception(f"Error processing email: {e}")
+                logger.error(f"process_email exception: {e}")
                 return None
     logger.error(f"Failed to process email after {retries} attempts.")
     return None
+

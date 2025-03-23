@@ -1,12 +1,14 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Progress } from "@heroui/react";
 
 import Spinner from "../../components/spinner";
 
 const ProcessingPage = () => {
 	const router = useRouter();
 	const apiUrl = process.env.NEXT_PUBLIC_API_URL!;
+	const [progress, setProgress] = useState(0);
 
 	useEffect(() => {
 		const interval = setInterval(async () => {
@@ -17,13 +19,17 @@ const ProcessingPage = () => {
 				});
 
 				const result = await res.json();
-
+				if (result.total_emails === 0) {
+					setProgress(100);
+				} else {
+					setProgress(100 * (result.processed_emails / result.total_emails));
+				}
 				if (result.message === "Processing complete") {
 					clearInterval(interval);
 					router.push("/dashboard");
 				}
-			} catch (error) {
-				error;
+			} catch {
+				router.push("/logout");
 			}
 		}, 3000);
 
@@ -34,6 +40,15 @@ const ProcessingPage = () => {
 		<div className="flex flex-col items-center justify-center h-screen">
 			<h1 className="text-3xl font-semibold mb-4">We are processing your job!</h1>
 			<Spinner />
+			<div className="mb-3" />
+			<Progress
+				aria-label="Downloading..."
+				className="max-w-md"
+				showValueLabel={true}
+				size="md"
+				value={progress}
+			/>
+			<div className="mb-3" />
 			<p className="text-lg mt-4">
 				Your job is being processed. You will be redirected to the download page once it&#39;s ready.
 			</p>

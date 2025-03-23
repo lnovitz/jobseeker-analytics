@@ -8,7 +8,6 @@ COPY package*.json ./
 
 # Clean npm cache and install with exact versions
 RUN npm cache clean --force
-RUN npm install next@15.1.6
 RUN npm install
 
 # Copy source files

@@ -1,0 +1,9 @@
+{ 
+  "name": "jobseeker-analytics",
+  "version": "0.1.0",
+  "description": "Job application analytics platform",
+  "devDependencies": {
+    "eslint": "^9.22.0",
+    "prettier": "^3.5.3"
+  }
+}

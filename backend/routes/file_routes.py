@@ -96,6 +96,7 @@ async def process_csv(request: Request, user_id: str = Depends(validate_session)
         "company_name": "Company Name",
         "application_status": "Application Status",
         "received_at": "Received At",
+        "job_title": "Job Title",
         "subject": "Subject",
         "email_from": "Sender"
     }

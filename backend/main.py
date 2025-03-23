@@ -21,7 +21,7 @@ from contextlib import asynccontextmanager
 from database import create_db_and_tables
 
 # Import routes
-from routes import playground_routes, email_routes, auth_routes, file_routes
+from routes import playground_routes, email_routes, auth_routes, file_routes, users_routes
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -39,6 +39,7 @@ app.include_router(auth_routes.router)
 app.include_router(playground_routes.router)
 app.include_router(email_routes.router)
 app.include_router(file_routes.router)
+app.include_router(users_routes.router)
 
 limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter  # Ensure limiter is assigned
