@@ -12,16 +12,17 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
+from contextlib import asynccontextmanager
+
 from db.users import UserData
 from db.utils.user_utils import add_user
 from utils.file_utils import get_user_filepath
 from utils.config_utils import get_settings
 from session.session_layer import validate_session
-from contextlib import asynccontextmanager
 from database import create_db_and_tables
 
 # Import routes
-from routes import playground_routes, email_routes, auth_routes, file_routes, users_routes
+from routes import playground_routes, email_routes, auth_routes, file_routes, users_routes, email_webhook
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -40,6 +41,7 @@ app.include_router(playground_routes.router)
 app.include_router(email_routes.router)
 app.include_router(file_routes.router)
 app.include_router(users_routes.router)
+app.include_router(email_webhook.router, prefix="/api/v1")
 
 limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter  # Ensure limiter is assigned
@@ -67,14 +69,6 @@ app.add_middleware(
     allow_headers=["*"],  # Allow all headers
 )
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,  # Allow frontend origins
-    allow_credentials=True,
-    allow_methods=["*"],  # Allow all HTTP methods (GET, POST, etc.)
-    allow_headers=["*"],  # Allow all headers
-)
-
 # Set up Jinja2 templates
 templates = Jinja2Templates(directory="templates")
 
@@ -89,6 +83,13 @@ async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
         status_code=429,
         detail="Too many requests. Please try again later.",
     )
+
+
+@app.get("/ping")
+@limiter.limit("1/minute")
+def ping(request: Request):
+    """Test endpoint to verify the server is running"""
+    return {"status": "success", "message": "Server is running"}
 
 
 @app.post("/api/add-user")
