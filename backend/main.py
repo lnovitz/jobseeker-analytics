@@ -22,7 +22,7 @@ from session.session_layer import validate_session
 from database import create_db_and_tables
 
 # Import routes
-from routes import playground_routes, email_routes, auth_routes, file_routes, users_routes, email_webhook
+from routes import email_routes, auth_routes, file_routes, users_routes, email_webhook
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -37,7 +37,6 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Register routes
 app.include_router(auth_routes.router)
-app.include_router(playground_routes.router)
 app.include_router(email_routes.router)
 app.include_router(file_routes.router)
 app.include_router(users_routes.router)
