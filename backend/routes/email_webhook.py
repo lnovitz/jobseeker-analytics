@@ -8,6 +8,7 @@ import requests
 from sqlmodel import Session
 from database import get_session
 from db.utils.user_email_utils import create_user_email
+from db.users import Users
 from utils.email_utils import get_email
 from utils.llm_utils import process_email
 
@@ -106,8 +107,9 @@ async def receive_email(
             }
             
             # Create UserEmails record using existing utility
-            user = {"user_id": payload.recipient}  # Simplified user object with just the email as user_id
-            email_record = create_user_email(user, message_data)
+            tracked_user = Users(user_id=payload.recipient, user_email=payload.recipient, start_date=datetime.now())
+            # TODO: fix this user object to extract id and check if user exists and matches against stored token
+            email_record = create_user_email(tracked_user, message_data)
             
             if email_record:
                 db.add(email_record)

@@ -1,7 +1,7 @@
 from datetime import datetime
 import json
 import base64
-
+from db.utils import user_email_utils
 
 # Sample SNS subscription confirmation message
 sns_subscription_message = {
@@ -42,7 +42,7 @@ sns_email_notification = {
             "commonHeaders": {
                 "from": ["sender@example.com"],
                 "to": ["test@test.jobba.help"],
-                "subject": "Software Engineer Position"
+                "subject": "Software Engineer Position",
             }
         },
         "content": base64.b64encode(sample_email.encode()).decode()
@@ -59,7 +59,7 @@ def test_subscription_confirmation(test_client, mocker):
     mocker.patch('requests.get', return_value=mocker.Mock(status_code=200))
     
     response = test_client.post(
-        "/webhook/email",
+        "api/v1/webhook/email",
         json=sns_subscription_message
     )
     assert response.status_code == 200
@@ -68,8 +68,14 @@ def test_subscription_confirmation(test_client, mocker):
 
 def test_email_notification(test_client, mocker):
     """Test handling of email notification via SNS."""
+    # Mock user email creation
+    mock_user_email = mocker.Mock()
+    mock_user_email.id = "mock-id"
+    mock_user_email.user_id = "mock-user-id"
+    mocker.patch('db.utils.user_email_utils.create_user_email', return_value=mock_user_email)
+
     response = test_client.post(
-        "/webhook/email",
+        "api/v1/webhook/email",
         json=sns_email_notification
     )
     assert response.status_code == 200
