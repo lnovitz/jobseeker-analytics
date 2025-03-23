@@ -69,14 +69,6 @@ app.add_middleware(
     allow_headers=["*"],  # Allow all headers
 )
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,  # Allow frontend origins
-    allow_credentials=True,
-    allow_methods=["*"],  # Allow all HTTP methods (GET, POST, etc.)
-    allow_headers=["*"],  # Allow all headers
-)
-
 # Set up Jinja2 templates
 templates = Jinja2Templates(directory="templates")
 
