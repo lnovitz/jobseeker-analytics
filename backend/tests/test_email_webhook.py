@@ -13,7 +13,7 @@ sns_subscription_message = {
     "Timestamp": datetime.utcnow().isoformat(),
     "SignatureVersion": "1",
     "Signature": "test-signature",
-    "SigningCertURL": "https://example.com/cert"
+    "SigningCertURL": "https://example.com/cert",
 }
 
 # Sample SES email notification via SNS
@@ -32,38 +32,39 @@ sns_email_notification = {
     "Type": "Notification",
     "MessageId": "test-message-id",
     "TopicArn": "123",
-    "Message": json.dumps({
-        "mail": {
-            "timestamp": datetime.utcnow().isoformat(),
-            "source": "sender@example.com",
-            "destination": ["test@test.jobba.help"],
-            "messageId": "test-email-id",
-            "commonHeaders": {
-                "from": ["sender@example.com"],
-                "to": ["test@test.jobba.help"],
-                "subject": "Software Engineer Position",
-            }
-        },
-        "content": base64.b64encode(sample_email.encode()).decode()
-    }),
+    "Message": json.dumps(
+        {
+            "mail": {
+                "timestamp": datetime.utcnow().isoformat(),
+                "source": "sender@example.com",
+                "destination": ["test@test.jobba.help"],
+                "messageId": "test-email-id",
+                "commonHeaders": {
+                    "from": ["sender@example.com"],
+                    "to": ["test@test.jobba.help"],
+                    "subject": "Software Engineer Position",
+                },
+            },
+            "content": base64.b64encode(sample_email.encode()).decode(),
+        }
+    ),
     "Timestamp": datetime.utcnow().isoformat(),
     "SignatureVersion": "1",
     "Signature": "test-signature",
-    "SigningCertURL": "https://example.com/cert"
+    "SigningCertURL": "https://example.com/cert",
 }
+
 
 def test_subscription_confirmation(test_client, mocker):
     """Test handling of SNS subscription confirmation."""
     # Mock the requests.get call to return success
-    mocker.patch('requests.get', return_value=mocker.Mock(status_code=200))
-    
-    response = test_client.post(
-        "api/v1/webhook/email",
-        json=sns_subscription_message
-    )
+    mocker.patch("requests.get", return_value=mocker.Mock(status_code=200))
+
+    response = test_client.post("api/v1/webhook/email", json=sns_subscription_message)
     assert response.status_code == 200
     assert response.json()["status"] == "success"
     assert response.json()["message"] == "SNS subscription confirmed"
+
 
 def test_email_notification(test_client, mocker):
     """Test handling of email notification via SNS."""
@@ -71,13 +72,11 @@ def test_email_notification(test_client, mocker):
     mock_user_email = mocker.Mock()
     mock_user_email.id = "mock-id"
     mock_user_email.user_id = "mock-user-id"
-    mocker.patch('db.utils.user_email_utils.create_user_email', return_value=mock_user_email)
-
-    response = test_client.post(
-        "api/v1/webhook/email",
-        json=sns_email_notification
+    mocker.patch(
+        "db.utils.user_email_utils.create_user_email", return_value=mock_user_email
     )
+
+    response = test_client.post("api/v1/webhook/email", json=sns_email_notification)
     assert response.status_code == 200
     assert response.json()["status"] == "success"
     assert response.json()["message"] == "Email processed successfully"
-
