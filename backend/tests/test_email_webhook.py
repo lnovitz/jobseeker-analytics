@@ -1,7 +1,6 @@
 from datetime import datetime
 import json
 import base64
-from db.utils import user_email_utils
 
 # Sample SNS subscription confirmation message
 sns_subscription_message = {
