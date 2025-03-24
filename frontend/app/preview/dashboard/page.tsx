@@ -2,83 +2,66 @@
 
 import React, { useState, useEffect } from "react";
 import { Table, TableHeader, TableBody, TableColumn, TableRow, TableCell } from "@heroui/table";
+import {
+	Button,
+	Dropdown,
+	DropdownItem,
+	DropdownMenu,
+	DropdownSection,
+	DropdownTrigger,
+	Modal,
+	ModalBody,
+	ModalContent,
+	ModalFooter,
+	ModalHeader,
+	useDisclosure
+} from "@heroui/react";
 import { useRouter } from "next/navigation";
-import { Button, Dropdown, DropdownItem, DropdownMenu, DropdownSection, DropdownTrigger } from "@heroui/react";
-import { addToast } from "@heroui/toast";
 
 import { DownloadIcon, SortIcon } from "@/components/icons";
-import { checkAuth } from "@/utils/auth";
-
-interface Application {
-	id?: string;
-	company_name: string;
-	application_status: string;
-	received_at: string;
-	job_title: string;
-	subject: string;
-	email_from: string;
-}
+import { mockData } from "@/utils/mockData";
 
 // Load sort key from localStorage or use default "Sort By"
 const storedSortKey =
 	typeof window !== "undefined" ? localStorage.getItem("sortKey") || "Date (Newest)" : "Date (Newest)";
 
 export default function Dashboard() {
-	const router = useRouter();
+	interface Application {
+		id: string;
+		company_name: string;
+		application_status: string;
+		received_at: string;
+		job_title: string;
+		subject: string;
+		email_from: string;
+	}
+
+	const { isOpen, onOpen, onClose } = useDisclosure();
 	const [data, setData] = useState<Application[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [downloading, setDownloading] = useState(false);
-	const [error, setError] = useState<string | null>(null);
 	const [sortedData, setSortedData] = useState<Application[]>([]);
 	const [selectedKeys, setSelectedKeys] = useState(new Set([storedSortKey]));
+	const router = useRouter();
 
-	const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 	const selectedValue = React.useMemo(() => Array.from(selectedKeys).join(", ").replace(/_/g, ""), [selectedKeys]);
 
 	useEffect(() => {
-		const fetchData = async () => {
-			try {
-				// Check if user is logged in
-				const isAuthenticated = await checkAuth(apiUrl);
-				if (!isAuthenticated) {
-					addToast({
-						title: "You need to be logged in to access this page.",
-						color: "warning"
-					});
-					router.push("/");
-					return;
-				}
+		setLoading(true);
+		const dataTimeout = setTimeout(() => {
+			setData(mockData);
+			setLoading(false);
+		}, 1500);
 
-				// Fetch applicaions (if user is logged in)
-				const response = await fetch(`${apiUrl}/get-emails`, {
-					method: "GET",
-					credentials: "include" // Include cookies for session management
-				});
+		const openTimeout = setTimeout(() => {
+			onOpen();
+		}, 10000);
 
-				if (!response.ok) {
-					if (response.status === 404) {
-						setError("No applications found");
-					} else {
-						throw new Error(`HTTP error! status: ${response.status}`);
-					}
-				}
-
-				const result = await response.json();
-
-				if (result.length === 0) {
-					setError("No applications found");
-				} else {
-					setData(result);
-				}
-			} catch {
-				setError("Failed to load applications");
-			} finally {
-				setLoading(false);
-			}
+		return () => {
+			clearTimeout(dataTimeout);
+			clearTimeout(openTimeout);
 		};
-
-		fetchData();
-	}, [router]);
+	}, []);
 
 	// Sort data based on selected key
 	useEffect(() => {
@@ -120,102 +103,59 @@ export default function Dashboard() {
 		setSelectedKeys(new Set([sortKey]));
 	};
 
+	// Handle CSV download
 	async function downloadCsv() {
 		setDownloading(true);
-		try {
-			const response = await fetch(`${apiUrl}/process-csv`, {
-				method: "GET",
-				credentials: "include"
-			});
+		// Mock CSV generation (no api call)
+		const mockCsvContent =
+			"Company,Status,Received,Job Title,Subject,Sender\n" +
+			mockData
+				.map(
+					(item) =>
+						`${item.company_name},${item.application_status},${new Date(item.received_at).toLocaleDateString()},${item.job_title},${item.subject},${item.email_from}`
+				)
+				.join("\n");
 
-			if (!response.ok) {
-				let description = "Something went wrong. Please try again.";
-
-				if (response.status === 429) {
-					description = "Download limit reached. Please wait before trying again.";
-				} else {
-					description = "Please try again or contact help@jobba.help if the issue persists.";
-				}
-
-				addToast({
-					title: "Failed to download CSV",
-					description,
-					color: "danger"
-				});
-
-				return;
-			}
-
-			// Create a download link to trigger the file download
-			const blob = await response.blob();
-			const link = document.createElement("a");
-			const url = URL.createObjectURL(blob);
-			link.href = url;
-			link.download = `job_applications_${new Date().toISOString().split("T")[0]}.csv`;
-			document.body.appendChild(link);
-			link.click();
-			document.body.removeChild(link);
-			URL.revokeObjectURL(url);
-		} catch {
-			addToast({
-				title: "Something went wrong",
-				description: "Please try again",
-				color: "danger"
-			});
-		} finally {
-			setDownloading(false);
-		}
-	}
-
-	async function downloadSankey() {
-		setDownloading(true);
-		try {
-			const response = await fetch(`${apiUrl}/process-sankey`, {
-				method: "GET",
-				credentials: "include"
-			});
-
-			if (!response.ok) {
-				let description = "Something went wrong. Please try again.";
-
-				if (response.status === 429) {
-					description = "Download limit reached. Please wait before trying again.";
-				} else {
-					description = "Please try again or contact help@jobba.help if the issue persists.";
-				}
-
-				addToast({
-					title: "Failed to download Sankey Diagram",
-					description,
-					color: "danger"
-				});
-
-				return;
-			}
-
-			// Create a download link to trigger the file download
-			const blob = await response.blob();
-			const link = document.createElement("a");
-			const url = URL.createObjectURL(blob);
-			link.href = url;
-			link.download = `sankey_diagram_${new Date().toISOString().split("T")[0]}.png`;
-			document.body.appendChild(link);
-			link.click();
-			document.body.removeChild(link);
-			URL.revokeObjectURL(url);
-		} catch {
-			addToast({
-				title: "Something went wrong",
-				description: "Please try again",
-				color: "danger"
-			});
-		} finally {
-			setDownloading(false);
-		}
+		const blob = new Blob([mockCsvContent], { type: "text/csv" });
+		const link = document.createElement("a");
+		const url = URL.createObjectURL(blob);
+		link.href = url;
+		link.download = `job_applications_${new Date().toISOString().split("T")[0]}.csv`;
+		document.body.appendChild(link);
+		link.click();
+		document.body.removeChild(link);
+		URL.revokeObjectURL(url);
+		setDownloading(false);
 	}
 
 	return (
 		<div className="p-6">
+			<Modal backdrop="blur" isOpen={isOpen} size="xl" onClose={onClose}>
+				<ModalContent>
+					{(onClose) => (
+						<>
+							<ModalHeader className="flex flex-col gap-1">
+								Enjoying the preview? Join the waitlist!
+							</ModalHeader>
+							<ModalBody>
+								<p>
+									By joining the waitlist, you'll receive updates on new features and an invitation to
+									signup when we launch outside of beta.
+								</p>
+							</ModalBody>
+							<ModalFooter>
+								<Button color="danger" variant="light" onPress={onClose}>
+									Close
+								</Button>
+								<Button color="primary" onPress={() => router.push("/")}>
+									Sign Up Now
+								</Button>
+							</ModalFooter>
+						</>
+					)}
+				</ModalContent>
+			</Modal>
+
 			<div className="flex items-center justify-between mb-4">
 				<h1 className="text-2xl font-bold">Job Applications Dashboard</h1>
 				<div className="flex gap-x-4">
@@ -249,15 +189,6 @@ export default function Dashboard() {
 						</DropdownMenu>
 					</Dropdown>
 					<Button
-						color="primary"
-						isDisabled={!data || data.length === 0}
-						isLoading={downloading}
-						startContent={<DownloadIcon />}
-						onPress={downloadSankey}
-					>
-						Download Sankey Diagram
-					</Button>
-					<Button
 						color="success"
 						isDisabled={!data || data.length === 0}
 						isLoading={downloading}
@@ -271,13 +202,6 @@ export default function Dashboard() {
 
 			{loading ? (
 				<p>Loading applications...</p>
-			) : error ? (
-				<div className="text-red-500">
-					<p>{error}</p>
-					<Button color="warning" onPress={() => window.location.reload()}>
-						Try again
-					</Button>
-				</div>
 			) : (
 				<div className="overflow-x-auto bg-white shadow-md rounded-lg">
 					<Table aria-label="Applications Table">

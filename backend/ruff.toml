@@ -1,0 +1,7 @@
+exclude = [
+    ".git",
+    ".env",
+    ".venv", 
+    "venv",
+    "alembic/versions/**",
+]

@@ -67,7 +67,7 @@ export const Navbar = () => {
 					</Button>
 				</NavbarItem>
 				<NavbarItem>
-					{pathname === "/" ? (
+					{pathname === "/" || pathname.startsWith("/preview") ? (
 						<Button
 							className="w-full text-sm font-normal text-default-600 bg-default-100"
 							data-testid="GoogleLogin"

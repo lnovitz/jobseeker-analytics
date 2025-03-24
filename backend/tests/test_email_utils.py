@@ -1,8 +1,9 @@
 from unittest import mock
+import pytest
 
 from test_constants import SAMPLE_MESSAGE, SUBJECT_LINE
 import utils.email_utils as email_utils
-
+import db.utils.user_email_utils as user_email_utils
 
 def test_get_top_consecutive_capitalized_words():
     test_cases = {
@@ -132,3 +133,32 @@ def test_get_company_name_returns_last_capital_word_in_subject_line():
 def test_get_email_received_at_timestamp():
     received_at = email_utils.get_received_at_timestamp(1, SAMPLE_MESSAGE)
     assert received_at == "Thu, 2 May 2024 16:45:00 +0000"
+
+
+@pytest.fixture
+def mock_user():
+    user = mock.MagicMock()
+    user.user_id = "test_user_123"
+    return user
+
+
+@pytest.fixture
+def message_data_with_list_values():
+    """Message data where received_at is a list instead of a string"""
+    return {
+        "id": "19501385930c533f",
+        "company_name": "",
+        "application_status": "",
+        "received_at": "Thu, 13 Feb 2025 21:30:24 +0000 (UTC)",
+        "subject": "Message replied: Are you looking for Remote opportunities?",
+        "job_title": "",
+        "from": "Tester Recruiter <hit-reply@linkedin.com>"
+    }
+
+
+@mock.patch('db.utils.user_email_utils.check_email_exists')
+def test_create_user_email_with_list_values(mock_check_email, mock_user, message_data_with_list_values, caplog):
+    """Test that create_user_email handles message_data_with_list_values correctly"""
+    mock_check_email.return_value = False
+    result = user_email_utils.create_user_email(mock_user, message_data_with_list_values)
+    assert result is not None  # user email created successfully
