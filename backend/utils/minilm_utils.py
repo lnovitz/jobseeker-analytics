@@ -1,4 +1,5 @@
 import logging
+from sys import exception
 import joblib
 import pandas as pd
 from sentence_transformers import SentenceTransformer
@@ -99,7 +100,10 @@ def process_email(email_text):
         # Generate an embedding for the input email text
         # The model converts the email into an embedding
         embedding = model.encode(email_text, convert_to_numpy=True)
+        logger.info(embedding)
         
+        raise exception("This is a test exception")
+
         # Load the classifier and label encoder if they are not already loaded
         if not hasattr(classifier.steps[0][1], 'coef_'):
             classifier = joblib.load('status_classifier.joblib')

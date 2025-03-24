@@ -8,7 +8,7 @@ from constants import QUERY_APPLIED_EMAIL_FILTER
 from db.user_emails import UserEmails
 from db.utils.user_email_utils import create_user_email
 from utils.auth_utils import AuthenticatedUser
-from utils.email_utils import get_email_ids, get_email
+from utils.email_utils import get_email_ids, get_email, clean_email
 from utils.minilm_utils import process_email
 from utils.config_utils import get_settings
 from session.session_layer import validate_session
@@ -144,6 +144,7 @@ def fetch_emails_to_db(user: AuthenticatedUser) -> None:
                     "subject": msg.get("subject", "unknown"),
                     "job_title": result.get("job_title", "unknown"),
                     "from": msg.get("from", "unknown"),
+                    "cleaned_body": [clean_email(msg.get("text_content", ""))],
                 }
                 email_record = create_user_email(user, message_data)
                 if email_record:
