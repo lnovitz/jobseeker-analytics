@@ -81,7 +81,6 @@ def query_emails(request: Request, user_id: str = Depends(validate_session)) -> 
             logger.error(f"Error fetching emails for user_id {user_id}: {e}")
             raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
-
 def fetch_emails_to_db(user: AuthenticatedUser) -> None:
     global api_call_finished, total_emails, processed_emails
 
