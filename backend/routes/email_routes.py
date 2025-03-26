@@ -144,8 +144,9 @@ def fetch_emails_to_db(user: AuthenticatedUser) -> None:
                     "subject": msg.get("subject", "unknown"),
                     "job_title": result.get("job_title", "unknown"),
                     "from": msg.get("from", "unknown"),
-                    "cleaned_body": [clean_email(msg.get("text_content", ""))],
+                    "cleaned_body": clean_email(msg.get("text_content", "")),
                 }
+                logger.error(f"message_data: {message_data}")
                 email_record = create_user_email(user, message_data)
                 if email_record:
                     email_records.append(email_record)

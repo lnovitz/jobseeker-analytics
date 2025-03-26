@@ -281,6 +281,8 @@ def clean_email(email_body: str) -> list:
             processing.remove_punctuation_token,
             processing.remove_number_token,
         )
+        logger.error("email body: %s", email_body)
+        logger.error("pipeline clean: %s", pipeline.clean([email_body]))
         return pipeline.clean([email_body])
     except Exception as e:
         logger.error("Error cleaning email: %s", e)

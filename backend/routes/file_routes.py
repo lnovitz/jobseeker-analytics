@@ -56,7 +56,8 @@ async def process_csv(request: Request, user_id: str = Depends(validate_session)
         "received_at": "Received At",
         "job_title": "Job Title",
         "subject": "Subject",
-        "email_from": "Sender"
+        "email_from": "Sender",
+        "cleaned_body": "Cleaned Body"
     }
 
     selected_fields = list(field_mapping.keys())
