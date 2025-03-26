@@ -123,9 +123,10 @@ def get_email(message_id: str, gmail_instance=None):
                         content_type == "text/plain"
                         and "attachment" not in content_disposition
                     ):
-                        email_data["text_content"] = part.get_payload(
+                        raw_content = part.get_payload(
                             decode=True
                         ).decode(encoding="utf-8", errors="ignore")
+                        email_data["text_content"] = clean_utf8(raw_content)
                     elif (
                         content_type == "text/html"
                         and "attachment" not in content_disposition
@@ -136,9 +137,10 @@ def get_email(message_id: str, gmail_instance=None):
             else:
                 content_type = mime_msg.get_content_type()
                 if content_type == "text/plain":
-                    email_data["text_content"] = mime_msg.get_payload(
+                    raw_content = mime_msg.get_payload(
                         decode=True
                     ).decode(encoding="utf-8", errors="ignore")
+                    email_data["text_content"] = clean_utf8(raw_content)
                 elif content_type == "text/html":
                     email_data["html_content"] = mime_msg.get_payload(
                         decode=True
@@ -156,7 +158,8 @@ def get_email(message_id: str, gmail_instance=None):
 
 
 def get_email_ids(query: tuple = None, gmail_instance=None):
-    email_ids = []
+    # email_ids = []
+    thread_latest_messages = {}
     page_token = None
 
     while True:
@@ -173,13 +176,36 @@ def get_email_ids(query: tuple = None, gmail_instance=None):
         )
 
         if "messages" in response:
-            email_ids.extend(response["messages"])
+            # Process each message
+            for message in response["messages"]:
+                message_id = message["id"]
+                thread_id = message["threadId"]
+                
+                # Get the full message to access internal date
+                msg_detail = gmail_instance.users().messages().get(
+                    userId="me", 
+                    id=message_id, 
+                    format="metadata",
+                    metadataHeaders=["Date"]
+                ).execute()
+                
+                # Internal date is in milliseconds since epoch
+                internal_date = int(msg_detail.get("internalDate", 0))
+                
+                # If this thread hasn't been seen before, or if this message is newer
+                if thread_id not in thread_latest_messages or internal_date > thread_latest_messages[thread_id]["date"]:
+                    thread_latest_messages[thread_id] = {
+                        "id": message_id,
+                        "date": internal_date
+                    }
 
         page_token = response.get("nextPageToken")
         if not page_token:
             break
 
-    return email_ids
+    # return email_ids
+    latest_message_ids = [msg_info["id"] for msg_info in thread_latest_messages.values()]
+    return latest_message_ids
 
 
 def get_email_payload(msg):
@@ -269,9 +295,157 @@ def get_email_domain_from_address(email_address):
     return email_address.split("@")[1] if "@" in email_address else ""
 
 
+def clean_utf8(text: str, mode: str = 'basic') -> str:
+    """
+    Clean text by removing or replacing problematic UTF-8 characters.
+    
+    Args:
+        text (str): The text to clean
+        mode (str): Cleaning level - 'basic', 'moderate', or 'aggressive'
+        
+    Returns:
+        str: Cleaned text
+    """
+    import re
+    import unicodedata
+    
+    if not text:
+        return text
+    
+    # Basic cleaning - remove control characters and zero-width characters
+    if mode == 'basic':
+        # Remove control characters
+        text = re.sub(r'[\x00-\x1F\x7F-\x9F]', '', text)
+        # Remove zero-width characters
+        text = re.sub(r'[\u200B-\u200D\uFEFF]', '', text)
+    
+    # Moderate cleaning - normalize and remove emojis and most symbols
+    elif mode == 'moderate':
+        # Normalize unicode characters (convert to canonical form)
+        text = unicodedata.normalize('NFKD', text)
+        # Remove emojis and symbols
+        text = re.sub(r'[^\u0000-\u007F\u0080-\u00FF\u0100-\u017F\u0180-\u024F\u0250-\u02AF\u0300-\u036F]', '', text)
+    
+    # Aggressive cleaning - ASCII only
+    elif mode == 'aggressive':
+        # Keep only ASCII characters
+        text = re.sub(r'[^\x00-\x7F]', '', text)
+    
+    # Remove any resulting double spaces
+    text = re.sub(r' {2,}', ' ', text)
+    return text
+
+
+def remove_email_addresses(text: str, replacement: str = "[EMAIL]") -> str:
+    """
+    Remove all email addresses from a string and replace them with a placeholder.
+    
+    Args:
+        text (str): The input text containing email addresses
+        replacement (str): The placeholder to use. Defaults to "[EMAIL]"
+        
+    Returns:
+        str: The text with all email addresses replaced
+    """
+    import re
+    
+    # Comprehensive pattern to match most email formats
+    email_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+    
+    # Replace all matches with the placeholder
+    cleaned_text = re.sub(email_pattern, replacement, text)
+    
+    return cleaned_text
+
+def filter_personal_info(email_body: str, user_email: str) -> str:
+    """
+    Remove personal information from email body:
+    - User's name (extracted from email)
+    - User's email address
+    - LinkedIn profile URLs
+    """
+    import re
+    logger.info(f"Filtering personal info from email body for {user_email}")
+
+    if not email_body or not user_email:
+        return email_body
+
+    if isinstance(email_body, list):
+        email_body = email_body[0]
+    # Remove user's email address
+    email_body = email_body.replace(user_email, "[EMAIL]")
+    # Remove LinkedIn profile URLs
+    linkedin_pattern = r'https?://(?:www\.)?linkedin\.com/in/[^\s<>"]+'
+    email_body = re.sub(linkedin_pattern, "[LINKEDIN]", email_body)
+    email_body = clean_utf8(email_body)
+    return email_body
+
+
 def clean_email(email_body: str) -> list:
     import spacy
     from spacy_cleaner import processing, Cleaner
+
+    # First remove HTML tags if present
+    email_body = re.sub(r'<[^>]+>', ' ', email_body)
+    
+    # Common patterns that indicate the start of a quoted message
+    quote_patterns = [
+        # Reply headers
+        r'On .+wrote:',              # "On Monday, John wrote:"
+        r'\w+ \w+ \d+:\d+ [AP]M.*wrote',  # Date/time patterns like "Feb 11:35 PM Lianna wrote"
+        r'From: .+Sent: .+To: ',     # Outlook style headers
+        
+        # Forwarded content markers
+        r'-{3,}Forwarded Message-{3,}',
+        r'-{3,}Original Message-{3,}',
+        
+        # Quote markers
+        r'^\s*>.+$',                 # Lines starting with >
+        r'^-----Original Message-----$',
+
+        # Common date formats in replies
+        r'\d{1,2}/\d{1,2}/\d{2,4}.+wrote',
+        r'At \d{1,2}:\d{2} [AP]M .+wrote',
+
+        # Other delimiters
+        r'_{5,}',                    # Underscores as separators
+        r'={5,}',                    # Equal signs as separators
+    ]
+    
+    # Find the earliest quote marker
+    earliest_pos = len(email_body)
+    matched_pattern = None
+    
+    new_email_body = email_body
+
+    for pattern in quote_patterns:
+        matches = list(re.finditer(pattern, email_body, re.MULTILINE | re.IGNORECASE))
+        for match in matches:
+            if match.start() < earliest_pos:
+                earliest_pos = match.start()
+                matched_pattern = pattern
+    
+    # If we found a quotation marker, truncate the email
+    if matched_pattern and earliest_pos < len(email_body):
+        trimmed_body = email_body[:earliest_pos].strip()
+        if trimmed_body:
+            new_email_body = trimmed_body
+    
+    # Plan B: If no patterns matched or if truncating removed all content,
+    # look for empty lines as separators between messages
+    if not new_email_body or not matched_pattern or not email_body[:earliest_pos].strip():
+        # Split by double newlines (paragraph breaks)
+        paragraphs = re.split(r'\n\s*\n', email_body)
+        # Return just the first paragraph if it exists and isn't too short
+        if paragraphs and len(paragraphs[0]) > 10:  # Arbitrary minimum length
+            #logger.error("paragraphs[0].strip()", paragraphs[0].strip())
+            new_email_body = paragraphs[0].strip()
+    
+    # If all else fails, return the original (or truncated) content
+    if not new_email_body:
+        email_body = email_body[:earliest_pos].strip() if matched_pattern else email_body.strip()
+    else:
+        email_body = new_email_body
 
     try:
         model = spacy.load("en_core_web_sm")
@@ -281,8 +455,7 @@ def clean_email(email_body: str) -> list:
             processing.remove_punctuation_token,
             processing.remove_number_token,
         )
-        logger.error("email body: %s", email_body)
-        logger.error("pipeline clean: %s", pipeline.clean([email_body]))
+        #logger.error("email body: %s", email_body)
         return pipeline.clean([email_body])
     except Exception as e:
         logger.error("Error cleaning email: %s", e)

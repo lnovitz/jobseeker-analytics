@@ -8,7 +8,7 @@ from constants import QUERY_APPLIED_EMAIL_FILTER
 from db.user_emails import UserEmails
 from db.utils.user_email_utils import create_user_email
 from utils.auth_utils import AuthenticatedUser
-from utils.email_utils import get_email_ids, get_email, clean_email
+from utils.email_utils import get_email_ids, get_email, clean_email, filter_personal_info
 from utils.minilm_utils import process_email
 from utils.config_utils import get_settings
 from session.session_layer import validate_session
@@ -106,13 +106,14 @@ def fetch_emails_to_db(user: AuthenticatedUser) -> None:
         for idx, message in enumerate(messages):
             message_data = {}
             # (email_subject, email_from, email_domain, company_name, email_dt)
-            msg_id = message["id"]
+            msg_id = message
             logger.info(
                 f"user_id:{user.user_id} begin processing for email {idx + 1} of {len(messages)} with id {msg_id}"
             )
             processed_emails = idx + 1
 
             msg = get_email(message_id=msg_id, gmail_instance=service)
+            #logger.error(f"msg: {msg}")
 
             if msg:
                 try:
@@ -144,20 +145,31 @@ def fetch_emails_to_db(user: AuthenticatedUser) -> None:
                     "subject": msg.get("subject", "unknown"),
                     "job_title": result.get("job_title", "unknown"),
                     "from": msg.get("from", "unknown"),
-                    "cleaned_body": clean_email(msg.get("text_content", "")),
+                    "cleaned_body": filter_personal_info(
+                        clean_email(msg.get("text_content", "")), 
+                        user.user_email  # Pass the user's email for name extraction
+                    ),
                 }
                 logger.error(f"message_data: {message_data}")
-                email_record = create_user_email(user, message_data)
+                try:
+                    email_record = create_user_email(user, message_data)
+                except Exception as e:
+                    logger.error(f"Error creating email record: {e}")
+                    email_record = None
                 if email_record:
                     email_records.append(email_record)
 
         # batch insert all records at once
         if email_records:
-            session.add_all(email_records)
-            session.commit()
-            logger.info(
-                f"Added {len(email_records)} email records for user {user.user_id}"
-            )
+            try:
+                session.add_all(email_records)
+                session.commit()
+                logger.info(
+                    f"Added {len(email_records)} email records for user {user.user_id}"
+                )
+            except Exception as e:
+                logger.error(f"Error adding email records: {e}")
+                session.rollback()
 
         api_call_finished = True
         logger.info(f"user_id:{user.user_id} Email fetching complete.")

@@ -100,7 +100,6 @@ def process_email(email_text):
         # Generate an embedding for the input email text
         # The model converts the email into an embedding
         embedding = model.encode(email_text, convert_to_numpy=True)
-        logger.info(embedding)
         
         raise exception("This is a test exception")
 
