@@ -3,6 +3,10 @@
 import React, { useState, useEffect } from "react";
 import { Table, TableHeader, TableBody, TableColumn, TableRow, TableCell } from "@heroui/table";
 import { Button, Dropdown, DropdownItem, DropdownMenu, DropdownSection, DropdownTrigger } from "@heroui/react";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/react";
+import { DatePicker } from "@heroui/react";
+import { CalendarDate } from "@internationalized/date";
+import { useRouter } from "next/navigation";
 
 import { DownloadIcon, SortIcon } from "@/components/icons";
 
@@ -44,8 +48,70 @@ export default function JobApplicationsDashboard({
 }: JobApplicationsDashboardProps) {
 	const [sortedData, setSortedData] = useState<Application[]>([]);
 	const [selectedKeys, setSelectedKeys] = useState(new Set([getInitialSortKey(initialSortKey)]));
+	const [showModal, setShowModal] = useState(false);
+	const [selectedDate, setSelectedDate] = useState<CalendarDate | null>(null);
+	const [isSaving, setIsSaving] = useState(false);
+	const [isNewUser, setIsNewUser] = useState(false);
+	const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+	const router = useRouter();
 
 	const selectedValue = React.useMemo(() => Array.from(selectedKeys).join(", ").replace(/_/g, ""), [selectedKeys]);
+
+	const handleSave = async () => {
+		if (!selectedDate) return alert("Please select a start date");
+
+		setIsSaving(true);
+		const formattedDate = `${selectedDate.year}-${String(selectedDate.month).padStart(2, "0")}-${String(selectedDate.day).padStart(2, "0")}`;
+		// Step 1: Save the start date
+		const response = await fetch(`${apiUrl}/set-start-date`, {
+			method: "POST",
+			headers: { "Content-Type": "application/x-www-form-urlencoded" },
+			body: new URLSearchParams({ start_date: formattedDate.toString() }),
+			credentials: "include"
+		});
+
+		if (!response.ok) throw new Error("Failed to save start date");
+
+		// Step 2: Start background task (fetch emails)
+		startFetchEmailsBackgroundTask();
+
+		// Step 3: Navigate to processing page
+		setIsNewUser(false); // Hide the modal after saving
+		setShowModal(false);
+		router.push("/processing"); // Navigate to the processing page
+	};
+
+	const startFetchEmailsBackgroundTask = async () => {
+		// Example background task: Start fetching emails
+		const response = await fetch(`${apiUrl}/fetch-emails`, {
+			method: "POST", // or GET, depending on your API
+			credentials: "include"
+		});
+
+		if (!response.ok) {
+			return;
+		}
+	};
+
+	useEffect(() => {
+		setShowModal(isNewUser);
+	}, [isNewUser]);
+
+	useEffect(() => {
+		async function fetchSessionData() {
+			const response = await fetch("http://localhost:8000/api/session-data", {
+				method: "GET",
+				credentials: "include"
+			});
+			if (!response.ok) {
+				throw new Error(`HTTP error! status: ${response.status}`);
+			}
+			const data = await response.json();
+			setIsNewUser(!!data.is_new_user); // Set the new user flag
+			setShowModal(!!data.is_new_user); // Show modal if new user
+		}
+		fetchSessionData();
+	}, []);
 
 	// Sort data based on selected key
 	useEffect(() => {
@@ -91,6 +157,21 @@ export default function JobApplicationsDashboard({
 
 	return (
 		<div className="p-6">
+			{/* Modal for New User */}
+			<Modal isOpen={showModal} onOpenChange={setShowModal}>
+				<ModalContent>
+					<ModalHeader>Select Your Job Search Start Date</ModalHeader>
+					<ModalBody>
+						<DatePicker value={selectedDate} onChange={setSelectedDate} />
+					</ModalBody>
+					<ModalFooter>
+						<Button color="primary" isLoading={isSaving} onPress={handleSave}>
+							Save and Continue
+						</Button>
+					</ModalFooter>
+				</ModalContent>
+			</Modal>
+
 			{extraHeader}
 
 			<div className="flex items-center justify-between mb-4">

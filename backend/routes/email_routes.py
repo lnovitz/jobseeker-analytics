@@ -1,11 +1,9 @@
 import logging
 from typing import List, Optional
-from datetime import datetime
-from fastapi import APIRouter, Depends, Request, HTTPException
+from fastapi import APIRouter, Depends, Request, HTTPException, BackgroundTasks
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from sqlmodel import Session, select, desc
 from googleapiclient.discovery import build
-from constants import QUERY_APPLIED_EMAIL_FILTER
 from db.user_emails import UserEmails
 from db.utils.user_email_utils import create_user_email
 from utils.auth_utils import AuthenticatedUser
@@ -14,6 +12,11 @@ from utils.llm_utils import process_email
 from utils.config_utils import get_settings
 from session.session_layer import validate_session
 from database import engine
+from google.oauth2.credentials import Credentials
+import json
+from start_date.storage import get_start_date_email_filter
+from constants import QUERY_APPLIED_EMAIL_FILTER
+from datetime import datetime
 
 # Logger setup
 logger = logging.getLogger(__name__)
@@ -66,30 +69,57 @@ def query_emails(request: Request, user_id: str = Depends(validate_session)) -> 
             statement = select(UserEmails).where(UserEmails.user_id == user_id).order_by(desc(UserEmails.received_at))
             user_emails = session.exec(statement).all()
 
-            # If no records are found, return a 404 error
-            if not user_emails:
-                logger.warning(f"No emails found for user_id: {user_id}")
-                raise HTTPException(
-                    status_code=404, detail=f"No emails found for user_id: {user_id}"
-                )
-
-            logger.info(
-                f"Successfully fetched {len(user_emails)} emails for user_id: {user_id}"
-            )
-            return user_emails
+            logger.info(f"Found {len(user_emails)} emails for user_id: {user_id}")
+            return user_emails  # Return empty list if no emails exist
 
         except Exception as e:
             logger.error(f"Error fetching emails for user_id {user_id}: {e}")
             raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+        
+@router.post("/fetch-emails")
+async def start_fetch_emails(
+    request: Request, background_tasks: BackgroundTasks, user_id: str = Depends(validate_session)
+):
+    """Starts the background task for fetching and processing emails."""
+    
+    if not user_id:
+        raise HTTPException(status_code=403, detail="Unauthorized")
+    print("this is fetching emails:")
+    # Retrieve stored credentials
+    creds_json = request.session.get("creds")
+    if not creds_json:
+        logger.error(f"Missing credentials for user_id: {user_id}")
+        return HTMLResponse(content="User not authenticated. Please log in again.", status_code=401)
 
-def fetch_emails_to_db(user: AuthenticatedUser, last_updated: Optional[datetime] = None) -> None:
+    try:
+        # Convert JSON string back to Credentials object
+        creds_dict = json.loads(creds_json)
+        creds = Credentials.from_authorized_user_info(creds_dict)  # Convert dict to Credentials
+        user = AuthenticatedUser(creds)
+
+        logger.info(f"Starting email fetching process for user_id: {user_id}")
+
+        # Start email fetching in the background
+        background_tasks.add_task(fetch_emails_to_db, user, request)
+
+        return JSONResponse(content={"message": "Email fetching started"}, status_code=200)
+    except Exception as e:
+        logger.error(f"Error reconstructing credentials: {e}")
+        raise HTTPException(status_code=500, detail="Failed to authenticate user")
+
+
+def fetch_emails_to_db(user: AuthenticatedUser, request: Request, last_updated: Optional[datetime] = None) -> None:
     global api_call_finished, total_emails, processed_emails
 
     api_call_finished = False  # this is helpful if the user applies for a new job and wants to rerun the analysis during the same session
     logger.info("user_id:%s fetch_emails_to_db", user.user_id)
 
+    start_date = request.session.get("start_date")
+    start_date_query = get_start_date_email_filter(start_date)
+    is_new_user = request.session.get("is_new_user")
+
+    query = start_date_query
     with Session(engine) as session:
-        query = QUERY_APPLIED_EMAIL_FILTER
         # check for users last updated email
         if last_updated:
             # this converts our date time to number of seconds 
@@ -97,18 +127,25 @@ def fetch_emails_to_db(user: AuthenticatedUser, last_updated: Optional[datetime]
             # we append it to query so we get only emails recieved after however many seconds
             # for example, if the newest email you’ve stored was received at 2025‑03‑20 14:32 UTC, we convert that to 1710901920s 
             # and tell Gmail to fetch only messages received after March 20, 2025 at 14:32 UTC.
-            query += f" after:{additional_time}"
-            logger.info(f"user_id:{user.user_id} Fetching emails after {last_updated.isoformat()}")
+            if not start_date or not is_new_user:
+                query = QUERY_APPLIED_EMAIL_FILTER
+                query += f" after:{additional_time}"
+            
+                logger.info(f"user_id:{user.user_id} Fetching emails after {last_updated.isoformat()}")
         else:
-            logger.info(f"user_id:{user.user_id} Fetching all emails (no last_date)")
+            logger.info(f"user_id:{user.user_id} Fetching all emails (no last_date maybe with start date)")
 
         service = build("gmail", "v1", credentials=user.creds)
+
         messages = get_email_ids(
             query=query, gmail_instance=service
         )
+        # Update session to remove "new user" status
+        request.session["is_new_user"] = False
 
         if not messages:
             logger.info(f"user_id:{user.user_id} No job application emails found.")
+            api_call_finished = True
             return
 
         logger.info(f"user_id:{user.user_id} Found {len(messages)} emails.")

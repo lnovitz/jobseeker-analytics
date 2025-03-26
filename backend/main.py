@@ -3,7 +3,7 @@ import logging
 import os
 
 from fastapi import FastAPI, HTTPException, Request, Depends
-from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse 
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
@@ -21,7 +21,7 @@ from contextlib import asynccontextmanager
 from database import create_db_and_tables
 
 # Import routes
-from routes import email_routes, auth_routes, file_routes, users_routes
+from routes import email_routes, auth_routes, file_routes, users_routes, start_date_routes
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -39,6 +39,7 @@ app.include_router(auth_routes.router)
 app.include_router(email_routes.router)
 app.include_router(file_routes.router)
 app.include_router(users_routes.router)
+app.include_router(start_date_routes.router)
 
 limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter  # Ensure limiter is assigned
@@ -91,12 +92,12 @@ async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
 
 
 @app.post("/api/add-user")
-async def add_user_endpoint(user_data: UserData):
+async def add_user_endpoint(user_data: UserData, request: Request):
     """
-    This endpoint adds a user to the database
+    This endpoint adds a user to the database and session storage
     """
     try:
-        add_user(user_data)
+        add_user(user_data, request)
         return {"message": "User added successfully"}
     except Exception as e:
         # Log the error for debugging purposes
@@ -130,7 +131,6 @@ def success(request: Request, user_id: str = Depends(validate_session)):
     return templates.TemplateResponse(
         "success.html", {"request": request, "today": today}
     )
-
 
 # Run the app using Uvicorn
 if __name__ == "__main__":

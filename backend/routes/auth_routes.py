@@ -4,11 +4,12 @@ from fastapi import APIRouter, Depends, HTTPException, Request, BackgroundTasks
 from fastapi.responses import RedirectResponse, HTMLResponse
 from google_auth_oauthlib.flow import Flow
 
-from db.utils.user_utils import user_exists, add_user
+from db.utils.user_utils import user_exists
 from utils.auth_utils import AuthenticatedUser
 from session.session_layer import create_random_session_string, validate_session
 from utils.config_utils import get_settings
 from utils.cookie_utils import set_conditional_cookie
+from routes.email_routes import fetch_emails_to_db
 
 
 # Logger setup
@@ -25,8 +26,6 @@ APP_URL = settings.APP_URL
 @router.get("/login")
 async def login(request: Request, background_tasks: BackgroundTasks):
     """Handles Google OAuth2 login and authorization code exchange."""
-    from routes.email_routes import fetch_emails_to_db  # Move the import here to avoid circular import
-
     code = request.query_params.get("code")
     flow = Flow.from_client_secrets_file(
         settings.CLIENT_SECRETS_FILE,
@@ -36,10 +35,8 @@ async def login(request: Request, background_tasks: BackgroundTasks):
 
     try:
         if not code:
-            logger.info("No code in request, redirecting to authorization URL")
             authorization_url, state = flow.authorization_url(prompt="consent")
             return RedirectResponse(url=authorization_url)
-
         logger.info("Authorization code received, exchanging for token...")
         try:
             flow.fetch_token(code=code)
@@ -59,7 +56,6 @@ async def login(request: Request, background_tasks: BackgroundTasks):
             )  
 
         if not creds.valid:
-            logger.info("Invalid credentials, refreshing...")
             creds.refresh(Request())
             return RedirectResponse("/login", status_code=303)
 
@@ -77,6 +73,8 @@ async def login(request: Request, background_tasks: BackgroundTasks):
 
         request.session["token_expiry"] = token_expiry
         request.session["user_id"] = user.user_id
+        request.session["creds"] = creds.to_json() 
+        request.session["access_token"] = creds.token
 
         # NOTE: change redirection once dashboard is completed
         exists, last_fetched_date = user_exists(user)
@@ -85,20 +83,18 @@ async def login(request: Request, background_tasks: BackgroundTasks):
             response = RedirectResponse(
                 url=f"{settings.APP_URL}/processing", status_code=303
             )
+            background_tasks.add_task(fetch_emails_to_db, user, request, last_fetched_date)
+            logger.info("Background task started for user_id: %s", user.user_id)
         else:
-            logger.info("Adding user to the database...")
-            add_user(user)
-            response = RedirectResponse(
-                url=f"{settings.APP_URL}/processing", status_code=303
-            )
+            request.session["is_new_user"] = True
+            redirect_url = f"{APP_URL}/dashboard"  # Prompt for start date
+            print("User does not exist")
+
+        response = RedirectResponse(url=redirect_url, status_code=303)
 
         response = set_conditional_cookie(
             key="Authorization", value=session_id, response=response
         )
-
-        # Start email fetching in the background
-        background_tasks.add_task(fetch_emails_to_db, user, last_fetched_date)
-        logger.info("Background task started for user_id: %s", user.user_id)
 
         return response
     except Exception as e:

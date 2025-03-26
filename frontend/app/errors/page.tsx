@@ -53,7 +53,6 @@ function ErrorContent() {
 				);
 			}
 		} catch (err) {
-			console.error("Error in useEffect:", err);
 			setErrorMessage(`Error page encountered an error: ${err instanceof Error ? err.message : String(err)}`);
 		}
 	}, [searchParams]);

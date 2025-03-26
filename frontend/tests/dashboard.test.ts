@@ -37,10 +37,6 @@ test.describe("Dashboard", () => {
 	// 	await expect(jobsTable).toBeVisible();
 	// });
 
-	test("should display failed to load applications", async ({ page }) => {
-		await expect(page.getByText("Failed to load applications")).toBeVisible();
-	});
-
 	test("should display try again button", async ({ page }) => {
 		const tryAgainButton = await page.getByRole("button", { name: "Try again" });
 		await expect(tryAgainButton).toBeVisible();

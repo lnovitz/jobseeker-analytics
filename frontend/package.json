@@ -13,6 +13,7 @@
 		"check": "prettier --check . && eslint ."
 	},
 	"dependencies": {
+		"@headlessui/react": "^2.2.0",
 		"@heroicons/react": "^2.2.0",
 		"@heroui/react": "^2.6.14",
 		"@heroui/shared-icons": "^2.1.6",

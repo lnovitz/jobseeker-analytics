@@ -156,6 +156,7 @@ def get_email(message_id: str, gmail_instance=None):
 
 
 def get_email_ids(query: tuple = None, gmail_instance=None):
+    print("hello: ")
     email_ids = []
     page_token = None
 
