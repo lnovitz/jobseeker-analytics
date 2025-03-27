@@ -274,3 +274,87 @@ export const CheckCircleIcon: React.FC<IconSvgProps> = ({ size = 24, width, heig
 		/>
 	</svg>
 );
+
+export const CopyIcon: React.FC<IconSvgProps> = ({ size = 24, width, height, ...props }) => (
+	<svg
+		fill="none"
+		height={size || height}
+		stroke="currentColor"
+		strokeLinecap="round"
+		strokeLinejoin="round"
+		strokeWidth="2"
+		viewBox="0 0 24 24"
+		width={size || width}
+		{...props}
+	>
+		<rect height="13" rx="2" ry="2" width="13" x="9" y="9" />
+		<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+	</svg>
+);
+
+export const EmailIcon: React.FC<IconSvgProps> = ({ size = 24, width, height, ...props }) => (
+	<svg
+		fill="none"
+		height={size || height}
+		stroke="currentColor"
+		strokeLinecap="round"
+		strokeLinejoin="round"
+		strokeWidth="2"
+		viewBox="0 0 24 24"
+		width={size || width}
+		{...props}
+	>
+		<path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+		<polyline points="22,6 12,13 2,6" />
+	</svg>
+);
+
+export const ArrowRightIcon: React.FC<IconSvgProps> = ({ size = 24, width, height, ...props }) => (
+	<svg
+		fill="none"
+		height={size || height}
+		stroke="currentColor"
+		strokeLinecap="round"
+		strokeLinejoin="round"
+		strokeWidth="2"
+		viewBox="0 0 24 24"
+		width={size || width}
+		{...props}
+	>
+		<line x1="5" x2="19" y1="12" y2="12" />
+		<polyline points="12 5 19 12 12 19" />
+	</svg>
+);
+
+export const CheckIcon: React.FC<IconSvgProps> = ({ size = 24, width, height, ...props }) => (
+	<svg
+		fill="none"
+		height={size || height}
+		stroke="currentColor"
+		strokeLinecap="round"
+		strokeLinejoin="round"
+		strokeWidth="2"
+		viewBox="0 0 24 24"
+		width={size || width}
+		{...props}
+	>
+		<polyline points="20 6 9 17 4 12" />
+	</svg>
+);
+
+export const SendIcon: React.FC<IconSvgProps> = ({ size = 24, width, height, ...props }) => (
+	<svg
+		fill="none"
+		height={size || height}
+		stroke="currentColor"
+		strokeLinecap="round"
+		strokeLinejoin="round"
+		strokeWidth="2"
+		viewBox="0 0 24 24"
+		width={size || width}
+		{...props}
+	>
+		<line x1="22" x2="11" y1="2" y2="13" />
+		<polygon points="22 2 15 22 11 13 2 9 22 2" />
+	</svg>
+);
