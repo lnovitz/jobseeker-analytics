@@ -235,6 +235,19 @@ export default function Home() {
 					</div>
 				</div>
 
+				{/* Preview User Flow */}
+				<div className="mb-10 p-6 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm">
+					<h2 className="text-2xl font-bold mb-3 text-gray-900 dark:text-white">
+						Want to see what the app is like?
+					</h2>
+					<p className="mb-4 text-gray-600 dark:text-gray-300">
+						Click the button below to simulate the app using sample data
+					</p>
+					<Button className="w-full" color="primary" isLoading={loading} variant="ghost" onPress={tryPreview}>
+						Try it out!
+					</Button>
+				</div>
+
 				{/* MailerLite Signup Form */}
 				<div className="mb-10 p-6 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm">
 					<h2 className="text-2xl font-bold mb-3 text-gray-900 dark:text-white">Join the Waitlist</h2>
@@ -299,17 +312,6 @@ export default function Home() {
 							</Button>
 						</form>
 					) : null}
-				</div>
-				<div className="mb-10 p-6 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm">
-					<h2 className="text-2xl font-bold mb-3 text-gray-900 dark:text-white">
-						Want to see what the app is like?
-					</h2>
-					<p className="mb-4 text-gray-600 dark:text-gray-300">
-						Click the button below to simulate the app using sample data
-					</p>
-					<Button className="w-full" color="primary" isLoading={loading} variant="ghost" onPress={tryPreview}>
-						Try it out!
-					</Button>
 				</div>
 				<h2 className="text-2xl font-bold mt-6 mb-4 text-gray-900 dark:text-white">Resources</h2>
 

@@ -174,6 +174,8 @@ To inspect your PostgreSQL database running in Docker, follow these steps:
 - **Cannot Build Docker Image?**
    Try option 2, with venv and FastAPI server instead. 
 
+#### When do I need to rebuild Docker? 
+- if you change `.env` variables, you'll need to `docker compose down` and `docker compose up --build`
 ---
 
 ### Submit Changes  

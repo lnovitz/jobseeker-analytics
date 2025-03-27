@@ -1,11 +1,26 @@
 import logging
-from sqlmodel import Session, select
+from typing import Optional, Tuple
+from db.user_emails import UserEmails
+from sqlmodel import Session, select, func
 from db.users import Users 
 from datetime import datetime, timedelta, timezone 
 
 logger = logging.getLogger(__name__)
 
-def user_exists(user) -> bool:
+def get_last_email_date(user_id: str) -> Optional[datetime]:
+    from database import engine
+    """
+    Checks date of user's most recent email 
+
+    """
+    with Session(engine) as session:
+        row = session.exec(
+            select(func.max(UserEmails.received_at))
+            .where(UserEmails.user_id == user_id)
+        ).one() # aggregates in SQL to a single row
+    return row
+
+def user_exists(user) -> Tuple[bool, Optional[datetime]]:
     from database import engine
     """
     Checks if user is already in the database
@@ -14,9 +29,10 @@ def user_exists(user) -> bool:
     with Session(engine) as session:
         existing_user = session.exec(select(Users).where(Users.user_id == user.user_id)).first()
         if not existing_user:
-            return False
+            return False, None
         else:
-            return True
+            last_fetched_date = get_last_email_date(user.user_id)
+            return True, last_fetched_date
 
 def add_user(user) -> Users:
     """

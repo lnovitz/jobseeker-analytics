@@ -1,50 +1,18 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Table, TableHeader, TableBody, TableColumn, TableRow, TableCell } from "@heroui/table";
-import {
-	Button,
-	Dropdown,
-	DropdownItem,
-	DropdownMenu,
-	DropdownSection,
-	DropdownTrigger,
-	Modal,
-	ModalBody,
-	ModalContent,
-	ModalFooter,
-	ModalHeader,
-	useDisclosure
-} from "@heroui/react";
+import { Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, useDisclosure, Button } from "@heroui/react";
 import { useRouter } from "next/navigation";
 
-import { DownloadIcon, SortIcon } from "@/components/icons";
+import JobApplicationsDashboard, { Application } from "@/components/JobApplicationsDashboard";
 import { mockData } from "@/utils/mockData";
 
-// Load sort key from localStorage or use default "Sort By"
-const storedSortKey =
-	typeof window !== "undefined" ? localStorage.getItem("sortKey") || "Date (Newest)" : "Date (Newest)";
-
-export default function Dashboard() {
-	interface Application {
-		id: string;
-		company_name: string;
-		application_status: string;
-		received_at: string;
-		job_title: string;
-		subject: string;
-		email_from: string;
-	}
-
+export default function PreviewDashboard() {
 	const { isOpen, onOpen, onClose } = useDisclosure();
 	const [data, setData] = useState<Application[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [downloading, setDownloading] = useState(false);
-	const [sortedData, setSortedData] = useState<Application[]>([]);
-	const [selectedKeys, setSelectedKeys] = useState(new Set([storedSortKey]));
 	const router = useRouter();
-
-	const selectedValue = React.useMemo(() => Array.from(selectedKeys).join(", ").replace(/_/g, ""), [selectedKeys]);
 
 	useEffect(() => {
 		setLoading(true);
@@ -61,47 +29,7 @@ export default function Dashboard() {
 			clearTimeout(dataTimeout);
 			clearTimeout(openTimeout);
 		};
-	}, []);
-
-	// Sort data based on selected key
-	useEffect(() => {
-		const sortData = () => {
-			const sorted = [...data];
-			const sortKey = Array.from(selectedKeys)[0];
-
-			switch (sortKey) {
-				case "Date (Newest)":
-					sorted.sort((a, b) => new Date(b.received_at).getTime() - new Date(a.received_at).getTime());
-					break;
-				case "Date (Oldest)":
-					sorted.sort((a, b) => new Date(a.received_at).getTime() - new Date(b.received_at).getTime());
-					break;
-				case "Company":
-					sorted.sort((a, b) => a.company_name.localeCompare(b.company_name));
-					break;
-				case "Job Title":
-					sorted.sort((a, b) => a.job_title.localeCompare(b.job_title));
-					break;
-				case "Status":
-					sorted.sort((a, b) => a.application_status.localeCompare(b.application_status));
-					break;
-				default:
-					break;
-			}
-			setSortedData(sorted);
-		};
-
-		if (data.length > 0) {
-			sortData();
-		}
-	}, [selectedKeys, data]);
-
-	// Handle sorting selection change and store it in localStorage
-	const handleSortChange = (keys: Set<string>) => {
-		const sortKey = Array.from(keys)[0];
-		localStorage.setItem("sortKey", sortKey);
-		setSelectedKeys(new Set([sortKey]));
-	};
+	}, [onOpen]);
 
 	// Handle CSV download
 	async function downloadCsv() {
@@ -128,116 +56,57 @@ export default function Dashboard() {
 		setDownloading(false);
 	}
 
-	return (
-		<div className="p-6">
-			<Modal backdrop="blur" isOpen={isOpen} size="xl" onClose={onClose}>
-				<ModalContent>
-					{(onClose) => (
-						<>
-							<ModalHeader className="flex flex-col gap-1">
-								Enjoying the preview? Join the waitlist!
-							</ModalHeader>
-							<ModalBody>
-								<p>
-									By joining the waitlist, you'll receive updates on new features and an invitation to
-									signup when we launch outside of beta.
-								</p>
-							</ModalBody>
-							<ModalFooter>
-								<Button color="danger" variant="light" onPress={onClose}>
-									Close
-								</Button>
-								<Button color="primary" onPress={() => router.push("/")}>
-									Sign Up Now
-								</Button>
-							</ModalFooter>
-						</>
-					)}
-				</ModalContent>
-			</Modal>
+	// Handle Sankey download
+	async function downloadSankey() {
+		setDownloading(true);
+		// Mock Sankey generation (no api call)
+		// Download frontend/public/sankey_diagram.png
+		const link = document.createElement("a");
+		link.href = "/sankey_diagram.png";
+		link.download = `sankey_diagram_${new Date().toISOString().split("T")[0]}.png`;
+		document.body.appendChild(link);
+		link.click();
+		document.body.removeChild(link);
+		setDownloading(false);
+	}
 
-			<div className="flex items-center justify-between mb-4">
-				<h1 className="text-2xl font-bold">Job Applications Dashboard</h1>
-				<div className="flex gap-x-4">
-					<Dropdown>
-						<DropdownTrigger>
-							<Button
-								className="pl-3"
-								color="primary"
-								isDisabled={!data || data.length === 0}
-								startContent={<SortIcon />}
-								variant="bordered"
-							>
-								{selectedValue}
+	const PromoModal = (
+		<Modal backdrop="blur" isOpen={isOpen} size="xl" onClose={onClose}>
+			<ModalContent>
+				{(onClose) => (
+					<>
+						<ModalHeader className="flex flex-col gap-1">
+							Enjoying the preview? Join the waitlist!
+						</ModalHeader>
+						<ModalBody>
+							<p>
+								By joining the waitlist, you'll receive updates on new features and an invitation to
+								signup when we launch outside of beta.
+							</p>
+						</ModalBody>
+						<ModalFooter>
+							<Button color="danger" variant="light" onPress={onClose}>
+								Close
 							</Button>
-						</DropdownTrigger>
-						<DropdownMenu
-							disallowEmptySelection
-							aria-label="Single selection example"
-							selectedKeys={selectedKeys}
-							selectionMode="single"
-							variant="flat"
-							onSelectionChange={(keys) => handleSortChange(keys as Set<string>)}
-						>
-							<DropdownSection title="Sort By">
-								<DropdownItem key="Date (Newest)">Date Received (Newest First)</DropdownItem>
-								<DropdownItem key="Date (Oldest)">Date Received (Oldest First)</DropdownItem>
-								<DropdownItem key="Company">Company (A-Z)</DropdownItem>
-								<DropdownItem key="Job Title">Job Title (A-Z)</DropdownItem>
-								<DropdownItem key="Status">Application Status</DropdownItem>
-							</DropdownSection>
-						</DropdownMenu>
-					</Dropdown>
-					<Button
-						color="success"
-						isDisabled={!data || data.length === 0}
-						isLoading={downloading}
-						startContent={<DownloadIcon />}
-						onPress={downloadCsv}
-					>
-						Download CSV
-					</Button>
-				</div>
-			</div>
+							<Button color="primary" onPress={() => router.push("/")}>
+								Sign Up Now
+							</Button>
+						</ModalFooter>
+					</>
+				)}
+			</ModalContent>
+		</Modal>
+	);
 
-			{loading ? (
-				<p>Loading applications...</p>
-			) : (
-				<div className="overflow-x-auto bg-white shadow-md rounded-lg">
-					<Table aria-label="Applications Table">
-						<TableHeader>
-							<TableColumn>Company</TableColumn>
-							<TableColumn>Status</TableColumn>
-							<TableColumn>Received</TableColumn>
-							<TableColumn>Job Title</TableColumn>
-							<TableColumn>Subject</TableColumn>
-							<TableColumn>Sender</TableColumn>
-						</TableHeader>
-						<TableBody>
-							{sortedData.map((item) => (
-								<TableRow key={item.id || item.received_at}>
-									<TableCell>{item.company_name || "--"}</TableCell>
-									<TableCell>
-										<span
-											className={`inline-flex items-center justify-center px-2 py-1 rounded ${
-												item.application_status.toLowerCase() === "rejected"
-													? "bg-red-100 text-red-800"
-													: "bg-green-100 text-green-800"
-											}`}
-										>
-											{item.application_status || "--"}
-										</span>
-									</TableCell>
-									<TableCell>{new Date(item.received_at).toLocaleDateString() || "--"}</TableCell>
-									<TableCell>{item.job_title || "--"}</TableCell>
-									<TableCell className="max-w-[300px] truncate">{item.subject || "--"}</TableCell>
-									<TableCell>{item.email_from || "--"}</TableCell>
-								</TableRow>
-							))}
-						</TableBody>
-					</Table>
-				</div>
-			)}
-		</div>
+	return (
+		<JobApplicationsDashboard
+			data={data}
+			downloading={downloading}
+			extraHeader={PromoModal}
+			loading={loading}
+			title="Preview Dashboard"
+			onDownloadCsv={downloadCsv}
+			onDownloadSankey={downloadSankey}
+		/>
 	);
 }

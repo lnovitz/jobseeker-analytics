@@ -41,8 +41,22 @@ async def login(request: Request, background_tasks: BackgroundTasks):
             return RedirectResponse(url=authorization_url)
 
         logger.info("Authorization code received, exchanging for token...")
-        flow.fetch_token(code=code)
-        creds = flow.credentials
+        try:
+            flow.fetch_token(code=code)
+        except Exception as e:
+            logger.error("Failed to fetch token: %s", e)
+            return RedirectResponse(
+                url=f"{settings.APP_URL}/errors?message=permissions_error",
+                status_code=303
+            )   
+        try:
+            creds = flow.credentials
+        except Exception as e:
+            logger.error("Failed to fetch credentials: %s", e)
+            return RedirectResponse(
+                url=f"{settings.APP_URL}/errors?message=credentials_error",
+                status_code=303
+            )  
 
         if not creds.valid:
             logger.info("Invalid credentials, refreshing...")
@@ -65,7 +79,8 @@ async def login(request: Request, background_tasks: BackgroundTasks):
         request.session["user_id"] = user.user_id
 
         # NOTE: change redirection once dashboard is completed
-        if user_exists(user):
+        exists, last_fetched_date = user_exists(user)
+        if exists:
             logger.info("User already exists in the database.")
             response = RedirectResponse(
                 url=f"{settings.APP_URL}/processing", status_code=303
@@ -82,7 +97,7 @@ async def login(request: Request, background_tasks: BackgroundTasks):
         )
 
         # Start email fetching in the background
-        background_tasks.add_task(fetch_emails_to_db, user)
+        background_tasks.add_task(fetch_emails_to_db, user, last_fetched_date)
         logger.info("Background task started for user_id: %s", user.user_id)
 
         return response

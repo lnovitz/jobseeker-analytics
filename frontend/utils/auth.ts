@@ -10,7 +10,7 @@ export async function checkAuth(apiUrl: string): Promise<boolean> {
 		}
 
 		return true;
-	} catch (error) {
+	} catch {
 		return false;
 	}
 }

@@ -33,12 +33,12 @@ export const Navbar = () => {
 	};
 
 	return (
-		<HeroUINavbar maxWidth="xl" position="sticky">
+		<HeroUINavbar isBordered className="p-1" maxWidth="xl" position="sticky">
 			<NavbarContent className="basis-1/5 sm:basis-full" justify="start">
 				<NavbarBrand as="li" className="gap-3 max-w-fit">
 					<NextLink className="flex justify-start items-center gap-1" href="/">
 						<div>
-							<p className="text-md font-bold text-inherit" data-testid="Logo">
+							<p className="text-xl font-bold text-inherit" data-testid="Logo">
 								jobba.help
 							</p>
 						</div>
