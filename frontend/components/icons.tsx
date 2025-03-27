@@ -274,3 +274,126 @@ export const CheckCircleIcon: React.FC<IconSvgProps> = ({ size = 24, width, heig
 		/>
 	</svg>
 );
+// Add these new icons to your existing file
+
+export const ArrowRightIcon: React.FC<IconSvgProps> = ({ size = 24, width, height, ...props }) => (
+	<svg
+		fill="none"
+		height={size || height}
+		stroke="currentColor"
+		strokeLinecap="round"
+		strokeLinejoin="round"
+		strokeWidth="2"
+		viewBox="0 0 24 24"
+		width={size || width}
+		{...props}
+	>
+		<line x1="5" x2="19" y1="12" y2="12" />
+		<polyline points="12 5 19 12 12 19" />
+	</svg>
+);
+
+export const BarChartIcon: React.FC<IconSvgProps> = ({ size = 24, width, height, ...props }) => (
+	<svg
+		fill="none"
+		height={size || height}
+		stroke="currentColor"
+		strokeLinecap="round"
+		strokeLinejoin="round"
+		strokeWidth="2"
+		viewBox="0 0 24 24"
+		width={size || width}
+		{...props}
+	>
+		<line x1="18" x2="18" y1="20" y2="10" />
+		<line x1="12" x2="12" y1="20" y2="4" />
+		<line x1="6" x2="6" y1="20" y2="14" />
+	</svg>
+);
+
+export const CheckIcon: React.FC<IconSvgProps> = ({ size = 24, width, height, ...props }) => (
+	<svg
+		fill="none"
+		height={size || height}
+		stroke="currentColor"
+		strokeLinecap="round"
+		strokeLinejoin="round"
+		strokeWidth="2"
+		viewBox="0 0 24 24"
+		width={size || width}
+		{...props}
+	>
+		<polyline points="20 6 9 17 4 12" />
+	</svg>
+);
+
+export const ClockIcon: React.FC<IconSvgProps> = ({ size = 24, width, height, ...props }) => (
+	<svg
+		fill="none"
+		height={size || height}
+		stroke="currentColor"
+		strokeLinecap="round"
+		strokeLinejoin="round"
+		strokeWidth="2"
+		viewBox="0 0 24 24"
+		width={size || width}
+		{...props}
+	>
+		<circle cx="12" cy="12" r="10" />
+		<polyline points="12 6 12 12 16 14" />
+	</svg>
+);
+
+export const EmailIcon: React.FC<IconSvgProps> = ({ size = 24, width, height, ...props }) => (
+	<svg
+		fill="none"
+		height={size || height}
+		stroke="currentColor"
+		strokeLinecap="round"
+		strokeLinejoin="round"
+		strokeWidth="2"
+		viewBox="0 0 24 24"
+		width={size || width}
+		{...props}
+	>
+		<path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+		<polyline points="22,6 12,13 2,6" />
+	</svg>
+);
+
+export const TargetIcon: React.FC<IconSvgProps> = ({ size = 24, width, height, ...props }) => (
+	<svg
+		fill="none"
+		height={size || height}
+		stroke="currentColor"
+		strokeLinecap="round"
+		strokeLinejoin="round"
+		strokeWidth="2"
+		viewBox="0 0 24 24"
+		width={size || width}
+		{...props}
+	>
+		<circle cx="12" cy="12" r="10" />
+		<circle cx="12" cy="12" r="6" />
+		<circle cx="12" cy="12" r="2" />
+	</svg>
+);
+
+export const UsersIcon: React.FC<IconSvgProps> = ({ size = 24, width, height, ...props }) => (
+	<svg
+		fill="none"
+		height={size || height}
+		stroke="currentColor"
+		strokeLinecap="round"
+		strokeLinejoin="round"
+		strokeWidth="2"
+		viewBox="0 0 24 24"
+		width={size || width}
+		{...props}
+	>
+		<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+		<circle cx="9" cy="7" r="4" />
+		<path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+		<path d="M16 3.13a4 4 0 0 1 0 7.75" />
+	</svg>
+);

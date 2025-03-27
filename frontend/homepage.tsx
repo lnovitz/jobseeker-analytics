@@ -27,7 +27,7 @@ export default function Homepage() {
 				<div className="container flex h-16 items-center justify-between">
 					<div className="flex items-center gap-2">
 						<Target className="h-6 w-6 text-primary" />
-						<span className="text-xl font-bold">jobba.help</span>
+						<span className="text-xl font-bold">Jobba</span>
 					</div>
 					<nav className="hidden md:flex gap-6">
 						<Link className="text-sm font-medium hover:underline underline-offset-4" href="#features">
@@ -158,7 +158,7 @@ export default function Homepage() {
 								</h2>
 								<p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
 									We understand how frustrating it is to apply and not hear back. That's why we built
-									jobba.help.
+									Jobba.
 								</p>
 							</div>
 						</div>
@@ -373,7 +373,7 @@ export default function Homepage() {
 								</div>
 								<h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Success stories</h2>
 								<p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-									See how job seekers like you are finding success with jobba.help.
+									See how job seekers like you are finding success with Jobba.
 								</p>
 							</div>
 						</div>
@@ -387,9 +387,9 @@ export default function Homepage() {
 										<div>
 											<p className="text-sm leading-relaxed text-muted-foreground mb-4">
 												"After 3 months of job searching with no system, I was getting nowhere.
-												With jobba.help, I could see that my response rate was only 5%. I
-												optimized my resume based on the analytics and increased it to 25%. I
-												had 3 offers within a month!"
+												With Jobba, I could see that my response rate was only 5%. I optimized
+												my resume based on the analytics and increased it to 25%. I had 3 offers
+												within a month!"
 											</p>
 											<p className="font-semibold">Sarah K.</p>
 											<p className="text-sm text-muted-foreground">Software Engineer</p>
@@ -406,9 +406,9 @@ export default function Homepage() {
 										<div>
 											<p className="text-sm leading-relaxed text-muted-foreground mb-4">
 												"The follow-up reminders alone were worth it. I realized I was leaving
-												opportunities on the table by not following up. jobba.help helped me
-												stay organized and persistent, which led to my dream job at a company
-												that initially ghosted me."
+												opportunities on the table by not following up. Jobba helped me stay
+												organized and persistent, which led to my dream job at a company that
+												initially ghosted me."
 											</p>
 											<p className="font-semibold">Marcus T.</p>
 											<p className="text-sm text-muted-foreground">Marketing Manager</p>
@@ -516,7 +516,7 @@ export default function Homepage() {
 									Ready to take control of your job search?
 								</h2>
 								<p className="mx-auto max-w-[700px] md:text-xl">
-									Join thousands of job seekers who are optimizing their job search with jobba.help.
+									Join thousands of job seekers who are optimizing their job search with Jobba.
 								</p>
 							</div>
 							<div className="w-full max-w-sm space-y-2">
@@ -545,7 +545,7 @@ export default function Homepage() {
 				<div className="container flex flex-col gap-6 py-8 md:flex-row md:items-center md:justify-between md:py-12">
 					<div className="flex items-center gap-2">
 						<Target className="h-6 w-6 text-primary" />
-						<span className="text-xl font-bold">jobba.help</span>
+						<span className="text-xl font-bold">Jobba</span>
 					</div>
 					<nav className="flex gap-4 sm:gap-6">
 						<Link className="text-xs hover:underline underline-offset-4" href="#">
@@ -562,7 +562,7 @@ export default function Homepage() {
 						</Link>
 					</nav>
 					<div className="text-xs text-muted-foreground">
-						© {new Date().getFullYear()} jobba.help. All rights reserved.
+						© {new Date().getFullYear()} Jobba. All rights reserved.
 					</div>
 				</div>
 			</footer>
