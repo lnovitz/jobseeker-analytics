@@ -66,6 +66,10 @@ export default function Homepage() {
 									Track response rates, follow-ups, and conversions, just like a business. The only
 									difference? You're the product.
 								</p>
+								<p className="max-w-[600px] text-muted-foreground md:text-xl">
+									You deserve transparency and enterprise level analytics for the most important
+									product in this job market - you.
+								</p>
 								<div className="flex flex-col gap-2 min-[400px]:flex-row">
 									<Button asChild size="lg">
 										<Link href="/signup">
@@ -99,8 +103,10 @@ export default function Homepage() {
 									The job search is broken
 								</h2>
 								<p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-									In a world where companies rely on data-driven insights to optimize hiring, job
-									seekers are left in the dark.
+									In a world where companies rely on data-driven insights for hiring, job seekers are
+									left in the dark, forced to manually track their own progress with no real analytics
+									on their job search performance. The labor of applying for jobs—researching,
+									networking, following up—is unpaid, unseen, and unoptimized.
 								</p>
 							</div>
 						</div>
@@ -377,7 +383,7 @@ export default function Homepage() {
 								</p>
 							</div>
 						</div>
-						<div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-2 lg:gap-12 mt-12">
+						<div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-1 lg:gap-12 mt-12 place-items-center">
 							<Card>
 								<CardContent className="p-6">
 									<div className="flex items-start gap-4">
@@ -386,32 +392,15 @@ export default function Homepage() {
 										</div>
 										<div>
 											<p className="text-sm leading-relaxed text-muted-foreground mb-4">
-												"After 3 months of job searching with no system, I was getting nowhere.
-												With jobba.help, I could see that my response rate was only 5%. I
-												optimized my resume based on the analytics and increased it to 25%. I
-												had 3 offers within a month!"
+												"I use it! It's extremely simple to use, and keeps track of my
+												applications seamlessly. Thank you for building an awesome product!"
 											</p>
-											<p className="font-semibold">Sarah K.</p>
-											<p className="text-sm text-muted-foreground">Software Engineer</p>
-										</div>
-									</div>
-								</CardContent>
-							</Card>
-							<Card>
-								<CardContent className="p-6">
-									<div className="flex items-start gap-4">
-										<div className="rounded-full bg-primary/10 p-2">
-											<Users className="h-6 w-6 text-primary" />
-										</div>
-										<div>
-											<p className="text-sm leading-relaxed text-muted-foreground mb-4">
-												"The follow-up reminders alone were worth it. I realized I was leaving
-												opportunities on the table by not following up. jobba.help helped me
-												stay organized and persistent, which led to my dream job at a company
-												that initially ghosted me."
+											<p className="font-semibold">
+												<a href="https://www.linkedin.com/in/vishwanshi-joshi/" target="_blank">
+													Vishwanshi Joshi
+												</a>
 											</p>
-											<p className="font-semibold">Marcus T.</p>
-											<p className="text-sm text-muted-foreground">Marketing Manager</p>
+											<p className="text-sm text-muted-foreground">Product Manager</p>
 										</div>
 									</div>
 								</CardContent>
@@ -440,7 +429,7 @@ export default function Homepage() {
 							<Card className="border-2 border-muted">
 								<CardHeader>
 									<CardTitle>Free</CardTitle>
-									<CardDescription>Perfect for getting started</CardDescription>
+									<CardDescription>Forever</CardDescription>
 									<div className="mt-4 flex items-baseline text-5xl font-bold">
 										$0
 										<span className="ml-1 text-lg font-medium text-muted-foreground">/month</span>
@@ -450,7 +439,7 @@ export default function Homepage() {
 									<ul className="grid gap-3">
 										<li className="flex items-center gap-2">
 											<CheckCircle className="h-4 w-4 text-primary" />
-											<span className="text-sm">Track up to 20 applications</span>
+											<span className="text-sm">Track unlimited applications</span>
 										</li>
 										<li className="flex items-center gap-2">
 											<CheckCircle className="h-4 w-4 text-primary" />
@@ -458,7 +447,7 @@ export default function Homepage() {
 										</li>
 										<li className="flex items-center gap-2">
 											<CheckCircle className="h-4 w-4 text-primary" />
-											<span className="text-sm">Email reminders</span>
+											<span className="text-sm">Data exports</span>
 										</li>
 									</ul>
 									<Button asChild className="mt-6 w-full" variant="outline">
@@ -469,7 +458,7 @@ export default function Homepage() {
 							<Card className="border-2 border-primary">
 								<CardHeader>
 									<CardTitle>Pro</CardTitle>
-									<CardDescription>For serious job seekers</CardDescription>
+									<CardDescription>Just got your severance package?</CardDescription>
 									<div className="mt-4 flex items-baseline text-5xl font-bold">
 										$9
 										<span className="ml-1 text-lg font-medium text-muted-foreground">/month</span>
@@ -479,15 +468,7 @@ export default function Homepage() {
 									<ul className="grid gap-3">
 										<li className="flex items-center gap-2">
 											<CheckCircle className="h-4 w-4 text-primary" />
-											<span className="text-sm">Unlimited application tracking</span>
-										</li>
-										<li className="flex items-center gap-2">
-											<CheckCircle className="h-4 w-4 text-primary" />
 											<span className="text-sm">Advanced analytics & reporting</span>
-										</li>
-										<li className="flex items-center gap-2">
-											<CheckCircle className="h-4 w-4 text-primary" />
-											<span className="text-sm">AI-powered recommendations</span>
 										</li>
 										<li className="flex items-center gap-2">
 											<CheckCircle className="h-4 w-4 text-primary" />
