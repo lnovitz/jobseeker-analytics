@@ -53,6 +53,6 @@ export const siteConfig = {
 	],
 	links: {
 		github: "https://github.com/lnovitz/jobseeker-analytics",
-		sponsor: "https://buymeacoffee.com/liano"
+		sponsor: "https://buymeacoffee.com/jobba.help"
 	}
 };
