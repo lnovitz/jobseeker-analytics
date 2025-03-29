@@ -18,6 +18,8 @@ import {
 } from "@heroui/react";
 
 import { DownloadIcon, SortIcon, TrashIcon } from "@/components/icons";
+import ResponseRateCard from "@/components/response_rate_card";
+import UniqueOpenRateChart from "@/components/response_rate_chart";
 
 export interface Application {
 	id?: string;
@@ -104,8 +106,28 @@ export default function JobApplicationsDashboard({
 	};
 
 	return (
-		<div className="p-6">
+		<div className="p-6 pt-2">
+			<h1 className="text-2xl font-bold mt-0">{title}</h1>
 			{extraHeader}
+
+			<div className="flex flex-col gap-4 mt-4 mb-6 md:flex-row">
+				<div className="w-full md:w-[30%]">
+					<ResponseRateCard />
+				</div>
+				<div className="md:w-[70%]">
+					<UniqueOpenRateChart />
+				</div>
+			</div>
+			<div className="flex flex-wrap items-center justify-end gap-4 mb-4">
+				<Dropdown>
+					<DropdownTrigger>
+						<Button
+							className="pl-3"
+							color="primary"
+							isDisabled={!data || data.length === 0}
+							startContent={<SortIcon />}
+							variant="bordered"
+
 			<Modal isOpen={showDelete} onOpenChange={(isOpen) => setShowDelete(isOpen)}>
 				<ModalContent>
 					{(onClose) => (
@@ -153,40 +175,52 @@ export default function JobApplicationsDashboard({
 							variant="flat"
 							onSelectionChange={(keys) => handleSortChange(keys as Set<string>)}
 						>
-							<DropdownSection title="Sort By">
-								<DropdownItem key="Date (Newest)">Date Received (Newest First)</DropdownItem>
-								<DropdownItem key="Date (Oldest)">Date Received (Oldest First)</DropdownItem>
-								<DropdownItem key="Company">Company (A-Z)</DropdownItem>
-								<DropdownItem key="Job Title">Job Title (A-Z)</DropdownItem>
-								<DropdownItem key="Status">Application Status</DropdownItem>
-							</DropdownSection>
-						</DropdownMenu>
-					</Dropdown>
-					<Button
-						color="primary"
-						isDisabled={!data || data.length === 0}
-						isLoading={downloading}
-						startContent={<DownloadIcon />}
-						onPress={onDownloadSankey}
+							{selectedValue}
+						</Button>
+					</DropdownTrigger>
+					<DropdownMenu
+						disallowEmptySelection
+						aria-label="Single selection example"
+						selectedKeys={selectedKeys}
+						selectionMode="single"
+						variant="flat"
+						onSelectionChange={(keys) => handleSortChange(keys as Set<string>)}
 					>
-						Download Sankey Diagram
-					</Button>
-					<Button
-						color="success"
-						isDisabled={!data || data.length === 0}
-						isLoading={downloading}
-						startContent={<DownloadIcon />}
-						onPress={onDownloadCsv}
-					>
-						Download CSV
-					</Button>
-				</div>
+						<DropdownSection title="Sort By">
+							<DropdownItem key="Date (Newest)">Date Received (Newest First)</DropdownItem>
+							<DropdownItem key="Date (Oldest)">Date Received (Oldest First)</DropdownItem>
+							<DropdownItem key="Company">Company (A-Z)</DropdownItem>
+							<DropdownItem key="Job Title">Job Title (A-Z)</DropdownItem>
+							<DropdownItem key="Status">Application Status</DropdownItem>
+						</DropdownSection>
+					</DropdownMenu>
+				</Dropdown>
+				<Button
+					className="w-full sm:w-auto text-white"
+					color="primary"
+					isDisabled={!data || data.length === 0}
+					isLoading={downloading}
+					startContent={<DownloadIcon />}
+					onPress={onDownloadSankey}
+				>
+					Download Sankey Diagram
+				</Button>
+				<Button
+					className="w-full sm:w-auto text-white"
+					color="success"
+					isDisabled={!data || data.length === 0}
+					isLoading={downloading}
+					startContent={<DownloadIcon />}
+					onPress={onDownloadCsv}
+				>
+					Download CSV
+				</Button>
 			</div>
 
 			{loading ? (
 				<p>Loading applications...</p>
 			) : (
-				<div className="overflow-x-auto bg-white shadow-md rounded-lg">
+				<div className="overflow-x-auto bg-white dark:bg-black shadow-md rounded-lg">
 					<Table aria-label="Applications Table">
 						<TableHeader>
 							<TableColumn>Company</TableColumn>

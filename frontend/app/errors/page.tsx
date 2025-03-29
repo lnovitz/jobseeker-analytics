@@ -53,6 +53,7 @@ function ErrorContent() {
 				);
 			}
 		} catch (err) {
+			// eslint-disable-next-line no-console
 			console.error("Error in useEffect:", err);
 			setErrorMessage(`Error page encountered an error: ${err instanceof Error ? err.message : String(err)}`);
 		}

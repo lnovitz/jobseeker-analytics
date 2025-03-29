@@ -29,7 +29,8 @@
 		"posthog-js": "^1.231.2",
 		"react": "18.3.1",
 		"react-dom": "18.3.1",
-		"react-google-recaptcha": "^3.1.0"
+		"react-google-recaptcha": "^3.1.0",
+		"recharts": "^2.15.1"
 	},
 	"devDependencies": {
 		"@eslint/js": "^9.22.0",
