@@ -81,6 +81,41 @@ def query_emails(request: Request, user_id: str = Depends(validate_session)) -> 
             logger.error(f"Error fetching emails for user_id {user_id}: {e}")
             raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
         
+
+@router.delete("/delete-email/{email_id}")
+async def delete_email(email_id: str, user_id: str = Depends(validate_session)):
+    """
+    Delete an email record by its ID for the authenticated user.
+    """
+    with Session(engine) as session:
+        try:
+            # Query the email record to ensure it exists and belongs to the user
+            email_record = session.exec(
+                select(UserEmails).where(
+                    (UserEmails.id == email_id) & (UserEmails.user_id == user_id)
+                )
+            ).first()
+
+            if not email_record:
+                logger.warning(f"Email with id {email_id} not found for user_id {user_id}")
+                raise HTTPException(
+                    status_code=404, detail=f"Email with id {email_id} not found"
+                )
+
+            # Delete the email record
+            session.delete(email_record)
+            session.commit()
+
+            logger.info(f"Email with id {email_id} deleted successfully for user_id {user_id}")
+            return {"message": "Item deleted successfully"}
+
+        except Exception as e:
+            logger.error(f"Error deleting email with id {email_id} for user_id {user_id}: {e}")
+            raise HTTPException(
+                status_code=500, detail=f"Failed to delete email: {str(e)}"
+            )
+        
+
 @router.post("/fetch-emails")
 @limiter.limit("5/minute")
 async def start_fetch_emails(

@@ -275,6 +275,23 @@ export const CheckCircleIcon: React.FC<IconSvgProps> = ({ size = 24, width, heig
 	</svg>
 );
 
+export const ClockIcon: React.FC<IconSvgProps> = ({ size = 16, width, height, ...props }) => (
+	<svg
+		fill="none"
+		height={size || height}
+		stroke="currentColor"
+		strokeLinecap="round"
+		strokeLinejoin="round"
+		strokeWidth="2"
+		viewBox="0 0 24 24"
+		width={size || width}
+		{...props}
+	>
+		<circle cx="12" cy="12" r="10" />
+		<polyline points="12 6 12 12 16 14" />
+	</svg>
+);
+
 export const TrashIcon: React.FC<IconSvgProps> = ({ size = 24, width, height, ...props }) => (
 	<svg
 		height={size || height}
