@@ -2,7 +2,48 @@
 
 Join the revolution of developers who want enterprise level analytics for the most important product in any job market - you.
 
+Job searching in 2024 is broken:
+
+❌ Manual tracking hell - Spreadsheets become outdated the moment you hit "send"
+
+❌ Zero feedback loops - Companies ghost, you get no insights why
+
+❌ Fragmented tools - Email trackers ≠ interview calendars ≠ analytics dashboards
+
+❌ Power imbalance - Companies have Applicant Tracking Systems (ATS), jobseekers get... Excel
+
 🎥 [Watch a demo](https://youtube.com/shorts/YT7qzTh2Q7A?feature=share)
+
+## **Our Solution**
+jobba.help delivers enterprise-grade analytics for individual jobseekers through:
+
+- Automated Intelligence
+- Gmail Integration
+
+With these integrations we are able to:
+
+- Scan your inbox to auto-log applications
+- Detect interview invites, rejections, and ghosting
+- Provide updates in real-time (no manual entry)
+
+## **What do we have right now?**
+As of now we have implemented several features to help jobseekers with their job search.
+
+### App preview
+- Since our beta is currently full we have implemented an interactive app preview with all the features regular users have access to, so interested users can get familiar with the app.
+
+### Automatic updates
+- Check out all you job applicaton related emails on our site with all the info you need such as:
+   - Company you applied to
+   - Status of the job application
+   - Role you applied to
+   - Date you received the job application email
+
+### Job hunt statistics
+- For those interested in numbers we have created a feature that tracks the response rate! It tracks the response rate as a whole (# of companies that have replied/# of total apps) and tracks the response rate based on the job titles that you have applied to.
+
+### Exporting
+- Want to share your job search updates with your friends and family? You can download your data as a csv or sankey diagram and easily share with others.
 
 ## **Stop wasting time filling out spreadsheets**
 
@@ -28,8 +69,8 @@ If you choose option 2, do the following:
 
 ##  🏗 **Tech Stack**
 
-- **Frontend:** Next.js, TypeScript
-- **Backend:** FastAPI, Python
+- **Frontend:** Next.js, TypeScript, TailwindCSS
+- **Backend:** FastAPI, Python, SQLModel
 - **Database:** PostgreSQL
 - **Integrations:** Gmail API, Posthog
 
