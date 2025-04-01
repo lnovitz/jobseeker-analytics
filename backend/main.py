@@ -1,9 +1,7 @@
-import datetime
 import logging
-import os
 
 from fastapi import FastAPI, HTTPException, Request, Depends
-from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse 
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
@@ -14,14 +12,13 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from db.users import UserData
 from db.utils.user_utils import add_user
-from utils.file_utils import get_user_filepath
 from utils.config_utils import get_settings
 from session.session_layer import validate_session
 from contextlib import asynccontextmanager
 from database import create_db_and_tables
 
 # Import routes
-from routes import email_routes, auth_routes, file_routes, users_routes
+from routes import email_routes, auth_routes, file_routes, users_routes, start_date_routes
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -39,6 +36,7 @@ app.include_router(auth_routes.router)
 app.include_router(email_routes.router)
 app.include_router(file_routes.router)
 app.include_router(users_routes.router)
+app.include_router(start_date_routes.router)
 
 limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter  # Ensure limiter is assigned
@@ -91,12 +89,13 @@ async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
 
 
 @app.post("/api/add-user")
-async def add_user_endpoint(user_data: UserData):
+@limiter.limit("3/minute")
+async def add_user_endpoint(user_data: UserData, request: Request, user_id: str = Depends(validate_session)):
     """
-    This endpoint adds a user to the database
+    This endpoint adds a user to the database and session storage
     """
     try:
-        add_user(user_data)
+        add_user(user_data, request)
         return {"message": "User added successfully"}
     except Exception as e:
         # Log the error for debugging purposes
@@ -107,30 +106,6 @@ async def add_user_endpoint(user_data: UserData):
 @app.get("/")
 async def root(request: Request, response_class=HTMLResponse):
     return templates.TemplateResponse("homepage.html", {"request": request})
-
-
-@app.get("/download-file")
-async def download_file(request: Request, user_id: str = Depends(validate_session)):
-    if not user_id:
-        return RedirectResponse("/logout", status_code=303)
-    directory = get_user_filepath(user_id)
-    filename = "emails.csv"
-    filepath = f"{directory}/{filename}"
-    if os.path.exists(filepath):
-        logger.info("user_id:%s downloading from filepath %s", user_id, filepath)
-        return FileResponse(filepath)
-    return HTMLResponse(content="File not found :( ", status_code=404)
-
-
-@app.get("/success", response_class=HTMLResponse)
-def success(request: Request, user_id: str = Depends(validate_session)):
-    if not user_id:
-        return RedirectResponse("/logout", status_code=303)
-    today = str(datetime.date.today())
-    return templates.TemplateResponse(
-        "success.html", {"request": request, "today": today}
-    )
-
 
 # Run the app using Uvicorn
 if __name__ == "__main__":

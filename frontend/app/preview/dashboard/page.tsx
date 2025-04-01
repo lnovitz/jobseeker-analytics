@@ -3,8 +3,9 @@
 import React, { useState, useEffect } from "react";
 import { Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, useDisclosure, Button } from "@heroui/react";
 import { useRouter } from "next/navigation";
+import { addToast } from "@heroui/toast";
 
-import JobApplicationsDashboard, { Application } from "@/components/JobApplicationsDashboard";
+import JobApplicationsDashboard, { Application } from "@/components/JobApplicationsDashboardPreview";
 import { mockData } from "@/utils/mockData";
 
 export default function PreviewDashboard() {
@@ -12,12 +13,18 @@ export default function PreviewDashboard() {
 	const [data, setData] = useState<Application[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [downloading, setDownloading] = useState(false);
+
+	const [currentPage, setCurrentPage] = useState(1);
+	const [totalPages, setTotalPages] = useState(1);
+
 	const router = useRouter();
+	const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 	useEffect(() => {
 		setLoading(true);
 		const dataTimeout = setTimeout(() => {
 			setData(mockData);
+			setTotalPages(Math.ceil(mockData.length / 10));
 			setLoading(false);
 		}, 1500);
 
@@ -30,6 +37,18 @@ export default function PreviewDashboard() {
 			clearTimeout(openTimeout);
 		};
 	}, [onOpen]);
+
+	const nextPage = () => {
+		if (currentPage < totalPages) {
+			setCurrentPage(currentPage + 1);
+		}
+	};
+
+	const prevPage = () => {
+		if (currentPage > 1) {
+			setCurrentPage(currentPage - 1);
+		}
+	};
 
 	// Handle CSV download
 	async function downloadCsv() {
@@ -98,15 +117,49 @@ export default function PreviewDashboard() {
 		</Modal>
 	);
 
+	const handleRemoveItem = async (id: string) => {
+		try {
+			// Make a DELETE request to the backend
+			const response = await fetch(`${apiUrl}/delete-email/${id}`, {
+				method: "DELETE",
+				credentials: "include" // Include cookies for authentication
+			});
+
+			if (!response.ok) {
+				throw new Error("Failed to delete the item");
+			}
+
+			// If the deletion is successful, update the local state
+			setData((prevData) => prevData.filter((item) => item.id !== id));
+
+			addToast({
+				title: "Item removed successfully",
+				color: "success"
+			});
+		} catch (error) {
+			console.error("Error deleting item:", error);
+			addToast({
+				title: "Failed to remove item",
+				description: "Please try again or contact support.",
+				color: "danger"
+			});
+		}
+	};
+
 	return (
 		<JobApplicationsDashboard
+			currentPage={currentPage}
 			data={data}
 			downloading={downloading}
 			extraHeader={PromoModal}
 			loading={loading}
 			title="Preview Dashboard"
+			totalPages={totalPages}
 			onDownloadCsv={downloadCsv}
 			onDownloadSankey={downloadSankey}
+			onNextPage={nextPage}
+			onPrevPage={prevPage}
+			onRemoveItem={handleRemoveItem}
 		/>
 	);
 }

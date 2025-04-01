@@ -2,9 +2,6 @@
 
 import React, { useState, useEffect } from "react";
 import { Table, TableHeader, TableBody, TableColumn, TableRow, TableCell } from "@heroui/table";
-import { DatePicker } from "@heroui/react";
-import { CalendarDate } from "@internationalized/date";
-import { useRouter } from "next/navigation";
 import {
 	Button,
 	Dropdown,
@@ -17,12 +14,14 @@ import {
 	ModalContent,
 	ModalFooter,
 	ModalHeader,
-	Tooltip
+	Tooltip,
+	useDisclosure
 } from "@heroui/react";
 
 import { DownloadIcon, SortIcon, TrashIcon } from "@/components/icons";
-import ResponseRateCard from "@/components/response_rate_card";
-import UniqueOpenRateChart from "@/components/response_rate_chart";
+import ResponseRateCard from "@/components/response_rate_card_preview";
+import UniqueOpenRateChart from "@/components/response_rate_chart_preview";
+import { mockData } from "@/utils/mockData";
 
 export interface Application {
 	id?: string;
@@ -56,89 +55,43 @@ const getInitialSortKey = (key: string) => {
 };
 
 export default function JobApplicationsDashboard({
-	title = "Job Applications Dashboard",
-	data,
-	loading,
-	downloading,
+	title = "Dashboard Preview",
 	onDownloadCsv,
 	onDownloadSankey,
 	onRemoveItem, // Accept the callback
 	initialSortKey = "Date (Newest)",
 	extraHeader
 }: JobApplicationsDashboardProps) {
+	const { isOpen, onOpen, onClose } = useDisclosure();
+	const [data, setData] = useState<Application[]>([]);
+	const [loading, setLoading] = useState(true);
+	const [downloading, setDownloading] = useState(false);
+
 	const [sortedData, setSortedData] = useState<Application[]>([]);
 	const [selectedKeys, setSelectedKeys] = useState(new Set([getInitialSortKey(initialSortKey)]));
-	const [showModal, setShowModal] = useState(false);
-	const [selectedDate, setSelectedDate] = useState<CalendarDate | null>(null);
-	const [isSaving, setIsSaving] = useState(false);
-	const [isNewUser, setIsNewUser] = useState(false);
-	const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-	const router = useRouter();
 	const [showDelete, setShowDelete] = useState(false);
 	const [itemToRemove, setItemToRemove] = useState<string | null>(null);
 
-	const [currentPage, setCurrentPage] = useState(1);
-	const pageSize = 10;
-
 	const selectedValue = React.useMemo(() => Array.from(selectedKeys).join(", ").replace(/_/g, ""), [selectedKeys]);
-
-	const handleSave = async () => {
-		if (!selectedDate) return alert("Please select a start date");
-
-		setIsSaving(true);
-		const formattedDate = `${selectedDate.year}-${String(selectedDate.month).padStart(2, "0")}-${String(selectedDate.day).padStart(2, "0")}`;
-		// Step 1: Save the start date
-		const response = await fetch(`${apiUrl}/set-start-date`, {
-			method: "POST",
-			headers: { "Content-Type": "application/x-www-form-urlencoded" },
-			body: new URLSearchParams({ start_date: formattedDate.toString() }),
-			credentials: "include"
-		});
-
-		if (!response.ok) throw new Error("Failed to save start date");
-
-		// Step 2: Start background task (fetch emails)
-		startFetchEmailsBackgroundTask();
-
-		// Step 3: Navigate to processing page
-		setIsNewUser(false); // Hide the modal after saving
-		setShowModal(false);
-		router.push("/processing"); // Navigate to the processing page
-	};
-
-	const startFetchEmailsBackgroundTask = async () => {
-		// Example background task: Start fetching emails
-		const response = await fetch(`${apiUrl}/fetch-emails`, {
-			method: "POST", // or GET, depending on your API
-			credentials: "include"
-		});
-
-		if (!response.ok) {
-			return;
-		}
-	};
-
-	useEffect(() => {
-		setShowModal(isNewUser);
-	}, [isNewUser]);
-
-	useEffect(() => {
-		async function fetchSessionData() {
-			const response = await fetch(`${apiUrl}/api/session-data`, {
-				method: "GET",
-				credentials: "include"
-			});
-			if (!response.ok) {
-				throw new Error(`HTTP error! status: ${response.status}`);
-			}
-			const data = await response.json();
-			setIsNewUser(!!data.is_new_user); // Set the new user flag
-			setShowModal(!!data.is_new_user); // Show modal if new user
-		}
-		fetchSessionData();
-	}, []);
-
 	// Sort data based on selected key
+
+	useEffect(() => {
+		setLoading(true);
+		const dataTimeout = setTimeout(() => {
+			setData(mockData);
+			setLoading(false);
+		}, 1500);
+
+		const openTimeout = setTimeout(() => {
+			onOpen();
+		}, 10000);
+
+		return () => {
+			clearTimeout(dataTimeout);
+			clearTimeout(openTimeout);
+		};
+	}, [onOpen]);
+
 	useEffect(() => {
 		const sortData = () => {
 			const sorted = [...data];
@@ -173,8 +126,6 @@ export default function JobApplicationsDashboard({
 		}
 	}, [selectedKeys, data]);
 
-	const paginatedData = sortedData.slice((currentPage - 1) * pageSize, currentPage * pageSize);
-
 	// Handle sorting selection change and store it in localStorage
 	const handleSortChange = (keys: Set<string>) => {
 		const sortKey = Array.from(keys)[0];
@@ -182,42 +133,8 @@ export default function JobApplicationsDashboard({
 		setSelectedKeys(new Set([sortKey]));
 	};
 
-	// Pagination controls
-	const handleNextPage = () => {
-		if (currentPage < Math.ceil(sortedData.length / pageSize)) {
-			setCurrentPage(currentPage + 1);
-		}
-	};
-
-	const handlePreviousPage = () => {
-		if (currentPage > 1) {
-			setCurrentPage(currentPage - 1);
-		}
-	};
-
-	const handlePageChange = (page: number) => {
-		setCurrentPage(page);
-	};
-
-	const totalPages = Math.ceil(sortedData.length / pageSize);
-
 	return (
-		<div className="p-6">
-			{/* Modal for New User */}
-			<Modal isOpen={showModal} onOpenChange={setShowModal}>
-				<ModalContent>
-					<ModalHeader>Select Your Job Search Start Date</ModalHeader>
-					<ModalBody>
-						<DatePicker value={selectedDate} onChange={setSelectedDate} />
-					</ModalBody>
-					<ModalFooter>
-						<Button color="primary" isLoading={isSaving} onPress={handleSave}>
-							Save and Continue
-						</Button>
-					</ModalFooter>
-				</ModalContent>
-			</Modal>
-
+		<div className="p-6 pt-2">
 			{extraHeader}
 			<Modal isOpen={showDelete} onOpenChange={(isOpen) => setShowDelete(isOpen)}>
 				<ModalContent>
@@ -253,7 +170,6 @@ export default function JobApplicationsDashboard({
 				</ModalContent>
 			</Modal>
 			<h1 className="text-2xl font-bold mt-0">{title}</h1>
-			{extraHeader}
 			<div className="flex flex-col gap-4 mt-4 mb-6 md:flex-row">
 				<div className="w-full md:w-[30%]">
 					<ResponseRateCard />
@@ -330,7 +246,7 @@ export default function JobApplicationsDashboard({
 							<TableColumn>Actions</TableColumn>
 						</TableHeader>
 						<TableBody>
-							{paginatedData.map((item) => (
+							{sortedData.map((item) => (
 								<TableRow
 									key={item.id || item.received_at}
 									className="hover:bg-default-100 transition-colors"
@@ -372,15 +288,6 @@ export default function JobApplicationsDashboard({
 					</Table>
 				</div>
 			)}
-			<div className="flex justify-between items-center mt-4">
-				<Button disabled={currentPage === 1} onPress={handlePreviousPage}>
-					Previous
-				</Button>
-				<span>{`${currentPage} of ${totalPages}`}</span>
-				<Button disabled={currentPage === totalPages} onPress={handleNextPage}>
-					Next
-				</Button>
-			</div>
 		</div>
 	);
 }
