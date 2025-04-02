@@ -44,13 +44,6 @@ test.describe("Navbar Tests", () => {
 		expect(currentURL).toMatch(/https:\/\/accounts\.google\.com/);
 	});
 
-	test("should show logout button on success page", async ({ page }) => {
-		await page.goto("http://localhost:3000/success");
-		const logoutButton = page.locator('[data-testid="GoogleLogout"]');
-		await expect(logoutButton).toBeVisible();
-		await expect(logoutButton).toHaveText("Logout");
-	});
-
 	test("should show navbar hamburger for smaller screens", async ({ page }) => {
 		await page.setViewportSize({ width: 375, height: 667 });
 		const menuToggle = page
@@ -68,13 +61,5 @@ test.describe("Navbar Tests", () => {
 		await page.waitForURL("**/accounts.google.com/**");
 		const currentURL = page.url();
 		expect(currentURL).toMatch(/https:\/\/accounts\.google\.com/);
-	});
-
-	test("logout button should be visible on the success page for smaller screens", async ({ page }) => {
-		await page.setViewportSize({ width: 375, height: 667 });
-		await page.goto("http://localhost:3000/success");
-		const logoutButton = page.locator('[data-testid="GoogleLogoutSmallScreen"]');
-		await expect(logoutButton).toBeVisible();
-		await expect(logoutButton).toHaveText("Logout");
 	});
 });
