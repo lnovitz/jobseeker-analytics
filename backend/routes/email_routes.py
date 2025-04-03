@@ -2,6 +2,7 @@ import logging
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Request, HTTPException, BackgroundTasks
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from db.utils.user_utils import get_last_email_date
 from sqlmodel import Session, select, desc
 from googleapiclient.discovery import build
 from db.user_emails import UserEmails
@@ -250,3 +251,54 @@ def fetch_emails_to_db(user: AuthenticatedUser, request: Request, last_updated: 
 
         api_call_finished = True
         logger.info(f"user_id:{user_id} Email fetching complete.")
+
+
+
+@router.post("/sync-emails")
+@limiter.limit("5/minute")
+async def sync_emails(
+    request: Request, 
+    background_tasks: BackgroundTasks, 
+    user_id: str = Depends(validate_session)
+):
+    """Starts background sync of new emails since last fetch."""
+    if not user_id:
+        raise HTTPException(status_code=403, detail="Unauthorized")
+    
+    logger.info(f"user_id:{user_id} initiating email sync")
+
+    # Retrieve stored credentials
+    creds_json = request.session.get("creds")
+    if not creds_json:
+        logger.error(f"Missing credentials for user_id: {user_id}")
+        return HTMLResponse(content="User not authenticated. Please log in again.", status_code=401)
+
+    try:
+        # Rebuild credentials and user object
+        creds_dict = json.loads(creds_json)
+        creds = Credentials.from_authorized_user_info(creds_dict)
+        user = AuthenticatedUser(creds)
+
+        # Use helper function to get last updated date
+        last_updated_date = get_last_email_date(user_id)
+        logger.info(f"Sync using last updated date: {last_updated_date}")
+
+        # Start background sync
+        background_tasks.add_task(
+            fetch_emails_to_db, 
+            user=user,
+            request=request,
+            last_updated=last_updated_date
+        )
+
+        return JSONResponse(
+            content={"message": "Email synchronization started"},
+            status_code=200
+        )
+
+    except Exception as e:
+        logger.error(f"Sync failed for user_id {user_id}: {e}")
+        raise HTTPException(
+            status_code=500, 
+            detail="Failed to start email synchronization"
+        )
