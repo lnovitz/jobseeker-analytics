@@ -20,7 +20,7 @@ import {
 	Tooltip
 } from "@heroui/react";
 
-import { DownloadIcon, SortIcon, TrashIcon } from "@/components/icons";
+import { DownloadIcon, SortIcon, TrashIcon, SyncIcon } from "@/components/icons";
 import ResponseRateCard from "@/components/response_rate_card";
 import UniqueOpenRateChart from "@/components/response_rate_chart";
 
@@ -41,6 +41,8 @@ interface JobApplicationsDashboardProps {
 	downloading: boolean;
 	onDownloadCsv: () => void;
 	onDownloadSankey: () => void;
+	onSyncData: () => void;
+	lastUpdated: string;
 	onRemoveItem: (id: string) => void;
 	initialSortKey?: string;
 	extraHeader?: React.ReactNode;
@@ -62,7 +64,9 @@ export default function JobApplicationsDashboard({
 	downloading,
 	onDownloadCsv,
 	onDownloadSankey,
-	onRemoveItem, // Accept the callback
+	onSyncData,
+	lastUpdated,
+	onRemoveItem,
 	initialSortKey = "Date (Newest)",
 	extraHeader
 }: JobApplicationsDashboardProps) {
@@ -312,6 +316,18 @@ export default function JobApplicationsDashboard({
 					onPress={onDownloadCsv}
 				>
 					Download CSV
+				</Button>
+
+				<Button
+					className="transition-all duration-300 ease-in-out
+             		hover:bg-purple-900 active:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+					color="secondary"
+					isDisabled={false}
+					isLoading={false}
+					startContent={<SyncIcon />}
+					onPress={onSyncData}
+				>
+					Sync Data
 				</Button>
 			</div>
 

@@ -94,7 +94,7 @@ async def login(request: Request, background_tasks: BackgroundTasks):
             response = RedirectResponse(
                 url=f"{settings.APP_URL}/dashboard", status_code=303
             )
-            print("User does not exist")
+            logger.info("User does not exist")
 
         response = set_conditional_cookie(
             key="Authorization", value=session_id, response=response

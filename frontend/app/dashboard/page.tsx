@@ -205,11 +205,37 @@ export default function Dashboard() {
 		}
 	};
 
+	async function syncData() {
+		try {
+			const response = await fetch(`${apiUrl}/sync-emails`, {
+				method: "POST",
+				credentials: "include" // Include cookies for session management
+			});
+
+			if (!response.ok) {
+				throw new Error("Failed to sync data");
+			}
+
+			addToast({
+				title: "Syncing data...",
+				color: "primary"
+			});
+			router.push("/processing");
+		} catch {
+			addToast({
+				title: "Sync Failed",
+				description: "Failed to sync data. Please try again.",
+				color: "danger"
+			});
+		}
+	}
+
 	return (
 		<JobApplicationsDashboard
 			currentPage={currentPage}
 			data={data}
 			downloading={downloading}
+			lastUpdated={new Date().toISOString()}
 			loading={loading}
 			totalPages={totalPages}
 			onDownloadCsv={downloadCsv}
@@ -217,6 +243,7 @@ export default function Dashboard() {
 			onNextPage={nextPage}
 			onPrevPage={prevPage}
 			onRemoveItem={handleRemoveItem}
+			onSyncData={syncData}
 		/>
 	);
 }
