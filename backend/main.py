@@ -15,14 +15,22 @@ from db.utils.user_utils import add_user
 from utils.config_utils import get_settings
 from session.session_layer import validate_session
 from contextlib import asynccontextmanager
-from database import create_db_and_tables
+from database import run_migrations
 
 # Import routes
 from routes import email_routes, auth_routes, file_routes, users_routes, start_date_routes
 
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.DEBUG, format="%(levelname)s - %(message)s")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    create_db_and_tables()
+    logger.info("Running migrations...")
+    run_migrations()
+    logger.info("Migrations completed.")
+    # Yield control back to the application
     yield
 
 app = FastAPI(lifespan=lifespan)
@@ -74,10 +82,6 @@ app.add_middleware(
 
 # Set up Jinja2 templates
 templates = Jinja2Templates(directory="templates")
-
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG, format="%(levelname)s - %(message)s")
-
 
 # Rate limit exception handler
 @app.exception_handler(RateLimitExceeded)
