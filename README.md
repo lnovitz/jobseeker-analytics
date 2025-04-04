@@ -80,6 +80,15 @@ If you choose option 2, do the following:
 
 ## **User Workflow**
 
+- **Preview Jobba**
+![image](https://github.com/user-attachments/assets/d8917ba7-631d-4b0f-ad5f-08b9ffe7002f)
+
+- **Run Jobba**
+![image](https://github.com/user-attachments/assets/c3f8dd6e-c72e-4ad1-83d0-5b856c95b2d9)
+
+- **Access Resources**
+![image](https://github.com/user-attachments/assets/8a2054d4-bc75-410c-9bdd-d4c3887aefa6)
+
 ## 🔒 **Privacy & Security**
 
 - jobba.help is currently in beta (100 user testing limit)
