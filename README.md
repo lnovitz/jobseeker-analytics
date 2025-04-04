@@ -67,12 +67,18 @@ If you choose option 2, do the following:
 - Or submit feedback by [form](https://docs.google.com/forms/d/e/1FAIpQLSeTJB5JDo-SNdVn2Ga3caExaYlwempeYHhWbEiao3jNCWXogQ/viewform?usp=sharing)
 - You can also always email us at [help@jobba.help](mailto:help@jobba.help).
 
+## **Architecture**
+
 ##  🏗 **Tech Stack**
 
-- **Frontend:** Next.js, TypeScript, TailwindCSS
+- **Frontend:** React, Next.js, TypeScript, TailwindCSS
 - **Backend:** FastAPI, Python, SQLModel
 - **Database:** PostgreSQL
+- **Deployment:** Render
 - **Integrations:** Gmail API, Posthog
+- **Testing:** Playwright(Frontend), Pytest(Backend)
+
+## **User Workflow**
 
 ## 🔒 **Privacy & Security**
 
