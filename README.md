@@ -68,7 +68,6 @@ If you choose option 2, do the following:
 - You can also always email us at [help@jobba.help](mailto:help@jobba.help).
 
 ## **Architecture**
-Jobba Architecture:
 <img width="858" alt="image" src="https://github.com/user-attachments/assets/63862f6c-43c9-4cd4-927d-c91af4174e77" />
 
 ##  🏗 **Tech Stack**
