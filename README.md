@@ -33,7 +33,7 @@ As of now we have implemented several features to help jobseekers with their job
 - Since our beta is currently full we have implemented an interactive app preview with all the features regular users have access to, so interested users can get familiar with the app.
 
 ### Automatic updates
-- Check out all you job applicaton related emails on our site with all the info you need such as:
+- Check out all your job applicaton related emails on our site with all the info you need such as:
    - Company you applied to
    - Status of the job application
    - Role you applied to
