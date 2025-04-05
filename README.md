@@ -82,13 +82,13 @@ If you choose option 2, do the following:
 ## **User Workflow**
 
 - **Preview Jobba**
-![image](https://github.com/user-attachments/assets/d8917ba7-631d-4b0f-ad5f-08b9ffe7002f)
+![image](https://github.com/user-attachments/assets/ad55577f-c610-4336-9583-23e2f91e6371)
 
 - **Run Jobba**
-![image](https://github.com/user-attachments/assets/c3f8dd6e-c72e-4ad1-83d0-5b856c95b2d9)
+![image](https://github.com/user-attachments/assets/f8397476-2eed-4360-b40a-8216030e3f47)
 
 - **Access Resources**
-![image](https://github.com/user-attachments/assets/8a2054d4-bc75-410c-9bdd-d4c3887aefa6)
+![image](https://github.com/user-attachments/assets/613dd18c-fb75-4d71-9d3f-5dda53bf180f)
 
 ## 🔒 **Privacy & Security**
 
