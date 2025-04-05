@@ -68,7 +68,7 @@ If you choose option 2, do the following:
 - You can also always email us at [help@jobba.help](mailto:help@jobba.help).
 
 ## **Architecture**
-![Blank board](https://github.com/user-attachments/assets/2855162a-4628-4f77-8205-0e22f72cd5d2)
+![Blank board (1)](https://github.com/user-attachments/assets/0b1d2f15-5bb2-4143-a281-1ea7b60a0fbb)
 
 ##  🏗 **Tech Stack**
 
