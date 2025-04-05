@@ -70,6 +70,9 @@ If you choose option 2, do the following:
 ## **Architecture**
 ![Blank board (1)](https://github.com/user-attachments/assets/0b1d2f15-5bb2-4143-a281-1ea7b60a0fbb)
 
+## **Entity Relationship Diagram**
+![image](https://github.com/user-attachments/assets/f0f0fc54-5008-45f8-ad53-64ea391461f6)
+
 ##  🏗 **Tech Stack**
 
 - **Frontend:** React, Next.js, TypeScript, TailwindCSS
