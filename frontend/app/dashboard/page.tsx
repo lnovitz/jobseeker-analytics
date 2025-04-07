@@ -5,6 +5,8 @@ import { addToast } from "@heroui/toast";
 import React from "react";
 
 import JobApplicationsDashboard, { Application } from "@/components/JobApplicationsDashboard";
+import ResponseRateCard from "@/components/response_rate_card";
+import UniqueOpenRateChart from "@/components/response_rate_chart";
 import { checkAuth } from "@/utils/auth";
 
 export default function Dashboard() {
@@ -205,12 +207,26 @@ export default function Dashboard() {
 		}
 	};
 
+	const responseRateContent = (
+		<>
+			<div className="flex flex-col gap-4 mt-4 mb-6 md:flex-row">
+				<div className="w-full md:w-[30%]">
+					<ResponseRateCard />
+				</div>
+				<div className="md:w-[70%]">
+					<UniqueOpenRateChart />
+				</div>
+			</div>
+		</>
+	);
+
 	return (
 		<JobApplicationsDashboard
 			currentPage={currentPage}
 			data={data}
 			downloading={downloading}
 			loading={loading}
+			responseRate={responseRateContent}
 			totalPages={totalPages}
 			onDownloadCsv={downloadCsv}
 			onDownloadSankey={downloadSankey}

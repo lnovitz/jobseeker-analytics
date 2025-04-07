@@ -6,7 +6,6 @@ import { Providers, PostHogProvider } from "./providers";
 
 import { siteConfig } from "@/config/site";
 import { fontSans } from "@/config/fonts";
-import { Navbar } from "@/components/navbar";
 
 export const metadata: Metadata = {
 	title: {
@@ -34,11 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 				<PostHogProvider>
 					<Providers themeProps={{ attribute: "class", defaultTheme: "dark" }}>
 						<div className="relative flex h-screen flex-col">
-							<Navbar />
 							<main className="container mx-auto flex-grow max-w-7xl px-6 pt-16">{children}</main>
-							<footer className="flex w-full flex-col items-center py-3">
-								<p className="mt-2 text-center">&copy; 2025 jobba.help</p>
-							</footer>
 						</div>
 					</Providers>
 				</PostHogProvider>

@@ -21,8 +21,6 @@ import {
 } from "@heroui/react";
 
 import { DownloadIcon, SortIcon, TrashIcon } from "@/components/icons";
-import ResponseRateCard from "@/components/response_rate_card";
-import UniqueOpenRateChart from "@/components/response_rate_chart";
 
 export interface Application {
 	id?: string;
@@ -43,7 +41,7 @@ interface JobApplicationsDashboardProps {
 	onDownloadSankey: () => void;
 	onRemoveItem: (id: string) => void;
 	initialSortKey?: string;
-	extraHeader?: React.ReactNode;
+	responseRate?: React.ReactNode;
 	onNextPage: () => void;
 	onPrevPage: () => void;
 	currentPage: number;
@@ -64,7 +62,7 @@ export default function JobApplicationsDashboard({
 	onDownloadSankey,
 	onRemoveItem, // Accept the callback
 	initialSortKey = "Date (Newest)",
-	extraHeader
+	responseRate
 }: JobApplicationsDashboardProps) {
 	const [sortedData, setSortedData] = useState<Application[]>([]);
 	const [selectedKeys, setSelectedKeys] = useState(new Set([getInitialSortKey(initialSortKey)]));
@@ -217,8 +215,6 @@ export default function JobApplicationsDashboard({
 					</ModalFooter>
 				</ModalContent>
 			</Modal>
-
-			{extraHeader}
 			<Modal isOpen={showDelete} onOpenChange={(isOpen) => setShowDelete(isOpen)}>
 				<ModalContent>
 					{(onClose) => (
@@ -253,15 +249,7 @@ export default function JobApplicationsDashboard({
 				</ModalContent>
 			</Modal>
 			<h1 className="text-2xl font-bold mt-0">{title}</h1>
-			{extraHeader}
-			<div className="flex flex-col gap-4 mt-4 mb-6 md:flex-row">
-				<div className="w-full md:w-[30%]">
-					<ResponseRateCard />
-				</div>
-				<div className="md:w-[70%]">
-					<UniqueOpenRateChart />
-				</div>
-			</div>
+			{responseRate}
 			<div className="flex flex-wrap items-center justify-end gap-4 mb-4">
 				<Dropdown>
 					<DropdownTrigger>

@@ -1,6 +1,6 @@
 ## **About jobba.help**
 
-Join the revolution of developers who want enterprise level analytics for the most important product in any job market - you.
+Treat job hunting like a sales funnel – Track response rates, follow-ups, and conversions, just like a business. Be data-driven.
 
 🎥 [Watch a demo](https://youtube.com/shorts/YT7qzTh2Q7A?feature=share)
 
@@ -8,7 +8,7 @@ Join the revolution of developers who want enterprise level analytics for the mo
 
 **Option 1: Waitlist**
 
-Our beta is full :( **[Join the waitlist](https://dashboard.mailerlite.com/forms/1348245/149432531062621442/share)** to receive updates when we launch outside of beta.
+Our beta is full :( **[Join the waitlist](https://get.jobba.help/)** to receive updates when we launch outside of beta.
 
 **Option 2: Clone**
 

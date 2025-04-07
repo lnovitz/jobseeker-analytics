@@ -5,7 +5,9 @@ import { Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, useDisclosure
 import { useRouter } from "next/navigation";
 import { addToast } from "@heroui/toast";
 
-import JobApplicationsDashboard, { Application } from "@/components/JobApplicationsDashboardPreview";
+import JobApplicationsDashboard, { Application } from "@/components/JobApplicationsDashboard";
+import ResponseRateCard from "@/components/response_rate_card_preview";
+import UniqueOpenRateChart from "@/components/response_rate_chart_preview";
 import { mockData } from "@/utils/mockData";
 
 export default function PreviewDashboard() {
@@ -146,13 +148,27 @@ export default function PreviewDashboard() {
 		}
 	};
 
+	const previewResponseRateContent = (
+		<>
+			{PromoModal}
+			<div className="flex flex-col gap-4 mt-4 mb-6 md:flex-row">
+				<div className="w-full md:w-[30%]">
+					<ResponseRateCard />
+				</div>
+				<div className="md:w-[70%]">
+					<UniqueOpenRateChart />
+				</div>
+			</div>
+		</>
+	);
+
 	return (
 		<JobApplicationsDashboard
 			currentPage={currentPage}
 			data={data}
 			downloading={downloading}
-			extraHeader={PromoModal}
 			loading={loading}
+			responseRate={previewResponseRateContent}
 			title="Preview Dashboard"
 			totalPages={totalPages}
 			onDownloadCsv={downloadCsv}
