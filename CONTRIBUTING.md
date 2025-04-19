@@ -6,7 +6,7 @@ Here you will learn how to install the app directly on your personal computer.
 
 Once the app is installed, you'll be able to gain full access to all the features. 
 
-If you are a current or aspiring developer, you can pick up [open issues](https://github.com/lnovitz/jobseeker-analytics/issues), write code to fix them, and get your work reviewed and merged. Comment on an issue if you'd like to try resolving it.
+If you are a current or aspiring developer, you can pick up [open issues](https://github.com/jobba-help/jobseeker-analytics/issues), write code to fix them, and get your work reviewed and merged. Comment on an issue if you'd like to try resolving it.
 
 If you're not an aspiring developer, that's totally ok. 
 
@@ -20,7 +20,7 @@ You may run into issues - email help@jobba.help for help :)
 1. On Windows: We recommend that you use WSL2. [Installation instructions here](https://learn.microsoft.com/en-us/windows/wsl/). 
 2. On Windows: start WSL 
 3. In Github, fork the repository
-4. Clone this fork  using ```git clone https://github.com/lnovitz/jobseeker-analytics.git```
+4. Clone this fork  using ```git clone https://github.com/jobba-help/jobseeker-analytics.git```
 5. ```cd jobseeker-analytics``` into the repo you just cloned
 
 ### Get a Google AI API key
