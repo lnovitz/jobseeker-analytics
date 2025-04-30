@@ -134,10 +134,6 @@ To inspect your PostgreSQL database running in Docker, follow these steps:
 2. **Start Docker Services (choose one of the commands below to start it if you haven't already)**:
    - Ensure your Docker services are running using the following command:
      ```bash
-     docker-compose -f docker-compose-dev.yaml up --build
-     ```
-   - Or use the following command to simulate a production build (useful if you do not need to test frontend changes and only want to test backend functionality changes - you won't need to wait for the frontend to compile every time you navigate to a different page):
-     ```bash
      docker-compose up --build
      ```
 
@@ -204,15 +200,36 @@ To inspect your PostgreSQL database running in Docker, follow these steps:
    git commit -m "add python library ruff"
    ```
 
-5. **Format your changes** and commit them:
+5. **Format your changes and check linting** and commit them:
 
-- If you're using Python, run:
+- To check backend code, run:
    ```sh
+   cd backend
    ruff format path/to/your/code
    git add .
    git commit -m "format with ruff"
    ```
-(Please ensure your code passes all linting checks before submitting a pull request.)
+- To check frontend code (formatting), run:
+   ```sh
+   cd frontend
+   npm run format
+   git add .
+   git commit -m "format with prettier"
+   ```
+
+- To check frontend code (linting), run:
+   ```sh
+   cd frontend
+   npm run lint
+   ```
+
+   **Fix the warnings/errors if any (process must be done manually)**
+
+   ```
+   git add .
+   git commit -m "format with prettier"
+   ```
+**(Please ensure your code passes all linting checks before submitting a pull request.)**
 
 6. **Push to your fork**:  
    ```sh
@@ -243,6 +260,16 @@ Bugs are tracked as [GitHub issues](https://docs.github.com/en/issues/tracking-y
 - Describe the behavior you observed after following the steps.
 - Include screenshots and/or animated GIFs when possible.
 - If the problem wasn't triggered by a specific action, describe what you were doing before the problem occurred.
+
+## Deployment
+
+Our app is currently deployed on Render on 2 environments:
+- [Live Production](https://www.jobba.help) (https://www.jobba.help)
+- [Staging](https://jobba-staging.onrender.com) (https://jobba-staging.onrender.com)
+
+**When accessing the staging site please be patient as the app spins down when there is no activity, so it make take a few minutes spin back up (Since we are using Render's free tier for this environment).**
+
+To get your code deployed or if you have any questions regarding deployment please contact [help@jobba.help](mailto:help@jobba.help)
 
 ## Code of Conduct
 
