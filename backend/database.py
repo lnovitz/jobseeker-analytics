@@ -3,9 +3,16 @@ from sqlmodel import SQLModel, create_engine, Session
 from utils.config_utils import get_settings
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from alembic.config import Config
+from alembic import command
+
 
 def create_db_and_tables():
     SQLModel.metadata.create_all(engine)
+
+def run_migrations():
+    alembic_cfg = Config("alembic.ini")
+    command.upgrade(alembic_cfg, "head")
 
 def get_session():
     return Session(engine)

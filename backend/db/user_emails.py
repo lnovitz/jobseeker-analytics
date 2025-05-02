@@ -1,5 +1,6 @@
 from sqlmodel import SQLModel, Field
 from datetime import datetime
+from typing import List
 
 class UserEmails(SQLModel, table=True):
     __tablename__ = "user_emails"  
@@ -11,3 +12,4 @@ class UserEmails(SQLModel, table=True):
     subject: str
     job_title: str
     email_from: str  # to avoid 'from' being a reserved key word
+    cleaned_body: str  # to store the cleaned email body
