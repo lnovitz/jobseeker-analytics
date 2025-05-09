@@ -2,6 +2,7 @@ import os
 import json
 import base64
 import email
+import re
 from datetime import datetime
 from typing import List, Dict, Optional
 from google.oauth2.credentials import Credentials
@@ -10,9 +11,54 @@ from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 from bs4 import BeautifulSoup
 import pandas as pd
+import tempfile
+import webbrowser
 
 # Gmail API scopes
 SCOPES = ['https://www.googleapis.com/auth/gmail.readonly']
+
+def clean_whitespace(text: str) -> str:
+    """Remove excessive whitespace while preserving paragraph breaks."""
+    # Replace multiple newlines with a single one
+    text = re.sub(r'\n\s*\n', '\n\n', text)
+    # Remove leading/trailing whitespace from each line
+    text = '\n'.join(line.strip() for line in text.split('\n'))
+    return text.strip()
+
+def clean_email_content(text: str) -> str:
+    """Clean up email content by removing tracking URLs and decoding HTML entities."""
+    # Remove LinkedIn tracking parameters
+    text = re.sub(r'\?lipi=[^&\s]+', '', text)
+    text = re.sub(r'&midToken=[^&\s]+', '', text)
+    text = re.sub(r'&midSig=[^&\s]+', '', text)
+    text = re.sub(r'&trk=[^&\s]+', '', text)
+    text = re.sub(r'&trkEmail=[^&\s]+', '', text)
+    text = re.sub(r'&eid=[^&\s]+', '', text)
+    
+    # Remove tracking URLs (usually long base64-like strings)
+    text = re.sub(r'<https?://[^>]+>', '', text)
+    
+    # Remove other common tracking patterns
+    text = re.sub(r'https?://[a-zA-Z0-9.-]+/[a-zA-Z0-9._/-]+', '', text)
+    
+    # Remove URL query parameters
+    text = re.sub(r'\?[^&\s]+', '', text)
+    text = re.sub(r'&[^&\s]+', '', text)
+    
+    # Remove HTML entities
+    text = re.sub(r'&[a-zA-Z]+;', '', text)
+    
+    # Remove common email tracking patterns
+    text = re.sub(r'\[cid:[^\]]+\]', '', text)
+    text = re.sub(r'\[image:[^\]]+\]', '', text)
+    
+    # Remove multiple spaces
+    text = re.sub(r'\s+', ' ', text)
+    
+    # Clean up whitespace
+    text = clean_whitespace(text)
+    
+    return text
 
 class GmailDataCollector:
     def __init__(self, credentials_path: str = 'credentials.json'):
@@ -24,6 +70,9 @@ class GmailDataCollector:
         """
         self.credentials_path = credentials_path
         self.service = self._get_gmail_service()
+        # Get user's email address
+        profile = self.service.users().getProfile(userId='me').execute()
+        self.user_email = profile['emailAddress']
         
     def _get_gmail_service(self):
         """Set up Gmail API service with authentication."""
@@ -72,6 +121,31 @@ class GmailDataCollector:
                 break
         return all_message_ids
     
+    def view_full_email_html(self, html_content: str):
+        """Open the full email HTML in a temporary browser window."""
+        with tempfile.NamedTemporaryFile('w', delete=False, suffix='.html') as f:
+            f.write("""
+            <html>
+            <head>
+                <style>
+                    body { 
+                        max-width: 800px; 
+                        margin: 40px auto; 
+                        padding: 20px;
+                        font-family: Arial, sans-serif;
+                        line-height: 1.6;
+                    }
+                </style>
+            </head>
+            <body>
+            """)
+            f.write(html_content)
+            f.write("</body></html>")
+            temp_path = f.name
+        
+        webbrowser.open('file://' + temp_path)
+        return temp_path
+
     def get_email_content(self, message_id: str) -> Dict:
         """
         Get the full content of an email.
@@ -95,25 +169,77 @@ class GmailDataCollector:
             sender = next(h['value'] for h in headers if h['name'] == 'From')
             date = next(h['value'] for h in headers if h['name'] == 'Date')
             
+            # Skip if the email is from the user
+            if self.user_email in sender:
+                return None
+            
             # Get email body
-            if 'parts' in message['payload']:
-                parts = message['payload']['parts']
-                body = ''
+            body = ''
+            html_content = ''
+            
+            def decode_base64(data):
+                try:
+                    return base64.urlsafe_b64decode(data).decode('utf-8')
+                except Exception as e:
+                    print(f"Error decoding base64: {e}")
+                    return ''
+
+            def extract_content(part):
+                if 'body' in part and 'data' in part['body']:
+                    return decode_base64(part['body']['data'])
+                return ''
+
+            def process_parts(parts):
+                nonlocal body, html_content
                 for part in parts:
                     if part['mimeType'] == 'text/plain':
-                        body = base64.urlsafe_b64decode(
-                            part['body']['data']
-                        ).decode('utf-8')
+                        body = extract_content(part)
                     elif part['mimeType'] == 'text/html':
-                        html = base64.urlsafe_b64decode(
-                            part['body']['data']
-                        ).decode('utf-8')
-                        soup = BeautifulSoup(html, 'html.parser')
-                        body = soup.get_text()
+                        html_content = extract_content(part)
+                    elif 'parts' in part:
+                        process_parts(part['parts'])
+            
+            if 'parts' in message['payload']:
+                process_parts(message['payload']['parts'])
             else:
-                body = base64.urlsafe_b64decode(
-                    message['payload']['body']['data']
-                ).decode('utf-8')
+                # Handle single part message
+                if message['payload']['mimeType'] == 'text/plain':
+                    body = extract_content(message['payload'])
+                elif message['payload']['mimeType'] == 'text/html':
+                    html_content = extract_content(message['payload'])
+                    body = BeautifulSoup(html_content, 'html.parser').get_text()
+            
+            # If we still don't have a body, try to get it from the raw message
+            if not body and not html_content:
+                raw_message = self.service.users().messages().get(
+                    userId='me',
+                    id=message_id,
+                    format='raw'
+                ).execute()
+                if 'raw' in raw_message:
+                    raw_data = base64.urlsafe_b64decode(raw_message['raw'])
+                    email_message = email.message_from_bytes(raw_data)
+                    if email_message.is_multipart():
+                        for part in email_message.walk():
+                            if part.get_content_type() == 'text/plain':
+                                body = part.get_payload(decode=True).decode()
+                            elif part.get_content_type() == 'text/html':
+                                html_content = part.get_payload(decode=True).decode()
+                    else:
+                        body = email_message.get_payload(decode=True).decode()
+            
+            # If we have HTML but no plain text, convert HTML to text
+            if not body and html_content:
+                soup = BeautifulSoup(html_content, 'html.parser')
+                body = soup.get_text()
+            
+            # Clean up the content
+            body = clean_email_content(body)
+            if html_content:
+                html_content = clean_email_content(html_content)
+            
+            # Store HTML content separately for viewing during labeling
+            self._current_html_content = html_content if html_content else f"<html><body><pre>{body}</pre></body></html>"
             
             return {
                 'id': message_id,
@@ -125,7 +251,7 @@ class GmailDataCollector:
             
         except Exception as e:
             print(f"Error getting email content: {e}")
-            return {}
+            return None
     
     def load_labeled_message_ids(self, output_file: str = 'training_data.json') -> set:
         """
@@ -145,6 +271,14 @@ class GmailDataCollector:
         """
         Collect and label training data from Gmail, skipping already labeled messages.
         """
+        # Check if user wants to start fresh
+        if os.path.exists(output_file):
+            choice = input("Existing training data found. Delete and start fresh? (y/n): ")
+            if choice.lower() == 'y':
+                os.remove(output_file)
+                print("Deleted existing training data.")
+            else:
+                print("Continuing with existing data.")
 
         # Search query for job application related emails
         with open("start_date_query.txt", "r") as f:
@@ -157,52 +291,97 @@ class GmailDataCollector:
         if os.path.exists(output_file):
             with open(output_file, 'r') as f:
                 training_data = json.load(f)
+
         print(f"Found {len(message_ids)} potential job application emails since 2024-01-01")
+        
         statuses = [
-            "false positive",
-            "rejected",
-            "no response",
-            "request for availability",
-            "interview scheduled",
-            "offer"
+            "False positive",
+            "Application confirmation",
+            "Rejection",
+            "Availability request", # Action required from candidate
+            "Information request",  # Action required from candidate
+            "Assessment sent", # Action required from candidate
+            "Interview invitation", # Action required from candidate
+            "Did not apply - they reached out",
+            "Action required from company",
+            "Hiring freeze notification",
+            "Withdrew application",
+            "Offer"
         ]
-        for i, msg_id in enumerate(message_ids, 1):
-            if msg_id in labeled_ids:
-                print(f"Skipping already labeled message {msg_id}")
-                continue
-            email_data = self.get_email_content(msg_id)
-            if not email_data:
-                continue
-            print(f"\nEmail {i}/{len(message_ids)}")
-            print(f"Subject: {email_data['subject']}")
-            print(f"From: {email_data['sender']}")
-            print(f"Date: {email_data['date']}")
-            print("\nBody preview:")
-            print(email_data['body'][:200] + "...")
-            
-            # Get user input for labeling
-            while True:
-                print("\nPossible statuses:")
-                for j, status in enumerate(statuses, 1):
-                    print(f"{j}. {status}")
-                print("0. Skip this email")
+
+        temp_html_file = None
+
+        try:
+            for i, msg_id in enumerate(message_ids, 1):
+                if msg_id in labeled_ids:
+                    print(f"Skipping already labeled message {msg_id}")
+                    continue
                 
+                email_data = self.get_email_content(msg_id)
+                if not email_data:
+                    continue
+
+                print("\n" + "="*80)
+                print(f"Email {i}/{len(message_ids)}")
+                print("="*80)
+                print(f"Subject: {email_data['subject']}")
+                print(f"From: {email_data['sender']}")
+                print(f"Date: {email_data['date']}")
+                print("\nBody preview (first 500 characters):")
+                print("-"*80)
+                print(email_data['body'][:500])
+                print("\n... (press 'v' to view full email in browser) ...")
+                
+                # Get user input for labeling
+                while True:
+                    print("\nPossible statuses:")
+                    for j, status in enumerate(statuses, 1):
+                        print(f"{j}. {status}")
+                    print("v. View full email in browser")
+                    
+                    choice = input("\nEnter choice (number or 'v' for view): ").strip().lower()
+                    
+                    if choice == 'v':
+                        if temp_html_file:  # Clean up previous temp file if it exists
+                            try:
+                                os.unlink(temp_html_file)
+                            except:
+                                pass
+                        temp_html_file = self.view_full_email_html(self._current_html_content)
+                        continue
+                    
+                    try:
+                        choice = int(choice)
+                        if 1 <= choice <= len(statuses):
+                            email_data['application_status'] = statuses[choice - 1]
+                            training_data.append(email_data)
+                            break
+                        else:
+                            print("Invalid choice. Please try again.")
+                    except ValueError:
+                        print("Please enter a valid number or 'v'.")
+                
+                # Save progress after each email
+                with open(output_file, 'w') as f:
+                    json.dump(training_data, f, indent=2)
+                
+                print(f"\nProgress saved. {len(training_data)} emails labeled so far.")
+                
+                # Clean up temp file if it exists
+                if temp_html_file and os.path.exists(temp_html_file):
+                    try:
+                        os.unlink(temp_html_file)
+                        temp_html_file = None
+                    except:
+                        pass
+
+        finally:
+            # Ensure temp file cleanup on exit
+            if temp_html_file and os.path.exists(temp_html_file):
                 try:
-                    choice = int(input("\nEnter the number corresponding to the application status: "))
-                    if 0 <= choice <= len(statuses):
-                        email_data['application_status'] = statuses[choice - 1]
-                        training_data.append(email_data)
-                        break
-                    else:
-                        print("Invalid choice. Please try again.")
-                except ValueError:
-                    print("Please enter a valid number.")
-            
-            # Save progress after each email
-            with open(output_file, 'w') as f:
-                json.dump(training_data, f, indent=2)
-            
-            print(f"\nProgress saved. {len(training_data)} emails labeled so far.")
+                    os.unlink(temp_html_file)
+                except:
+                    pass
             
         print(f"\nData collection complete. {len(training_data)} emails labeled.")
         print(f"Data saved to {output_file}")
