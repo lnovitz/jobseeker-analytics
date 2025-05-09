@@ -13,6 +13,7 @@ from bs4 import BeautifulSoup
 import pandas as pd
 import tempfile
 import webbrowser
+import html2text
 
 # Gmail API scopes
 SCOPES = ['https://www.googleapis.com/auth/gmail.readonly']
@@ -26,37 +27,39 @@ def clean_whitespace(text: str) -> str:
     return text.strip()
 
 def clean_email_content(text: str) -> str:
-    """Clean up email content by removing tracking URLs and decoding HTML entities."""
-    # Remove LinkedIn tracking parameters
-    text = re.sub(r'\?lipi=[^&\s]+', '', text)
-    text = re.sub(r'&midToken=[^&\s]+', '', text)
-    text = re.sub(r'&midSig=[^&\s]+', '', text)
-    text = re.sub(r'&trk=[^&\s]+', '', text)
-    text = re.sub(r'&trkEmail=[^&\s]+', '', text)
-    text = re.sub(r'&eid=[^&\s]+', '', text)
+    """Clean up email content by extracting only text content."""
+    # Use BeautifulSoup to extract only text content
+    soup = BeautifulSoup(text, 'html.parser')
     
-    # Remove tracking URLs (usually long base64-like strings)
-    text = re.sub(r'<https?://[^>]+>', '', text)
+    # Remove all style and script tags
+    for tag in soup.find_all(['style', 'script']):
+        tag.decompose()
     
-    # Remove other common tracking patterns
-    text = re.sub(r'https?://[a-zA-Z0-9.-]+/[a-zA-Z0-9._/-]+', '', text)
+    # Get only the text content
+    text = soup.get_text(separator=' ', strip=True)
     
-    # Remove URL query parameters
-    text = re.sub(r'\?[^&\s]+', '', text)
-    text = re.sub(r'&[^&\s]+', '', text)
+    # Remove any remaining CSS-like content
+    text = re.sub(r'@media[^{]*{[^}]*}', '', text)  # Remove media queries
+    text = re.sub(r'{[^}]*}', '', text)  # Remove CSS blocks
+    text = re.sub(r'!important', '', text)  # Remove !important declarations
+    text = re.sub(r'\*\[[^\]]*\]', '', text)  # Remove attribute selectors
+    text = re.sub(r'\.[a-zA-Z0-9_-]+', '', text)  # Remove class selectors
+    text = re.sub(r'/\*[^*]*\*/', '', text)  # Remove CSS comments
+    text = re.sub(r'}\s*}', '', text)  # Remove closing braces
+    text = re.sub(r',\s*,', ',', text)  # Remove duplicate commas
     
-    # Remove HTML entities
-    text = re.sub(r'&[a-zA-Z]+;', '', text)
+    # Remove tracking URLs and parameters
+    text = re.sub(r'http://[^\s)]+', '', text)  # Remove http URLs
+    text = re.sub(r'https://[^\s)]+', '', text)  # Remove https URLs
+    text = re.sub(r'\([^)]*\)', '', text)  # Remove parenthetical content
+    text = re.sub(r'\[[^\]]*\]', '', text)  # Remove bracketed content
     
-    # Remove common email tracking patterns
-    text = re.sub(r'\[cid:[^\]]+\]', '', text)
-    text = re.sub(r'\[image:[^\]]+\]', '', text)
-    
-    # Remove multiple spaces
-    text = re.sub(r'\s+', ' ', text)
-    
-    # Clean up whitespace
-    text = clean_whitespace(text)
+    # Clean up whitespace and punctuation
+    text = re.sub(r'\s+', ' ', text)  # Remove multiple spaces
+    text = re.sub(r',\s*$', '', text)  # Remove trailing commas
+    text = re.sub(r'^\s*,\s*', '', text)  # Remove leading commas
+    text = re.sub(r'\s*,\s*', ', ', text)  # Normalize comma spacing
+    text = text.strip()
     
     return text
 
@@ -169,8 +172,10 @@ class GmailDataCollector:
             sender = next(h['value'] for h in headers if h['name'] == 'From')
             date = next(h['value'] for h in headers if h['name'] == 'Date')
             
-            # Skip if the email is from the user
-            if self.user_email in sender:
+            # Skip if the email is from the user (check both email and name)
+            if (self.user_email in sender or 
+                "Lianna Novitz" in sender or 
+                "lianna.novitz" in sender.lower()):
                 return None
             
             # Get email body
