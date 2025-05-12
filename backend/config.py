@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     BROWSERBASE_API_KEY: str = "default-for-local"
     BROWSERBASE_PROJECT_ID: str = "default-for-local"
     OPENAI_API_KEY: str = "default-for-local"
+    GOOGLE_CSE_API_KEY: str = "default-for-local"
+    GOOGLE_CSE_ID: str = "default-for-local"
+    OPENAI_MODEL: str = "gpt-4o-mini"
 
     @field_validator("GOOGLE_SCOPES", mode="before")
     @classmethod

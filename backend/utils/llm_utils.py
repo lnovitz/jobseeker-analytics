@@ -7,11 +7,13 @@ from playwright.sync_api import Playwright
 from browserbase import Browserbase
 from typing import List, Dict, Tuple
 from pathlib import Path
-from playwright.sync_api import sync_playwright
+from utils.llm_utils import search_job_postings, create_scraping_task
 
 from utils.config_utils import get_settings
+import openai
 
 settings = get_settings()
+OPENAI_API_KEY = settings.OPENAI_API_KEY
 
 # Configure Google Gemini API
 genai.configure(api_key=settings.GOOGLE_API_KEY)
@@ -66,69 +68,6 @@ def extract_job_info_from_email(email_content: str) -> Tuple[str, str]:
     logger.error("Failed to extract job info after all retries")
     return "unknown", "unknown"
 
-
-
-def scrape_job_description_with_playwright(playwright: Playwright, url: str) -> Tuple[str, str]:
-    """
-    Scrape job description from a given URL using Browserbase.
-    Takes a Playwright instance as a parameter.
-    """
-    # Create a session using the module-level client
-    session = bb.sessions.create(project_id=settings.BROWSERBASE_PROJECT_ID)
-    logger.info(f"Session replay URL: https://browserbase.com/sessions/{session.id}")
-
-    try:
-        # Connect to the remote session
-        chromium = playwright.chromium
-        browser = chromium.connect_over_cdp(session.connect_url)
-        context = browser.contexts[0]
-        page = context.pages[0]
-
-        # Navigate to the job posting
-        page.goto(url)
-        
-        # Extract and summarize job description
-        raw_description = extract_job_description(page)
-        summary = summarize_job_description(raw_description)
-        
-        return raw_description, summary
-        
-    finally:
-        # Close the browser
-        page.close()
-        browser.close()
-        logger.info("Browser session closed")
-
-
-def extract_job_description(page) -> str:
-    """
-    Extract the job description text from the page.
-    """
-    # Common selectors for job description sections
-    selectors = [
-        '[data-test="jobDescriptionText"]',  # LinkedIn
-        '.job-description',  # Common class
-        '#job-description',  # Common ID
-        '[class*="description"]',  # Class containing 'description'
-        '[id*="description"]',  # ID containing 'description'
-        'article',  # Common for job postings
-        '.content',  # Common content class
-    ]
-    
-    # Try each selector
-    for selector in selectors:
-        try:
-            element = page.query_selector(selector)
-            if element:
-                text = element.inner_text()
-                if len(text) > 100:  # Basic validation that we found actual content
-                    return text
-        except Exception as e:
-            logger.warning(f"Failed to extract with selector {selector}: {str(e)}")
-            continue
-    
-    # Fallback: get all text content
-    return page.inner_text()
 
 def summarize_job_description(job_description: str) -> str:
     """
@@ -374,21 +313,15 @@ def process_email(email_text, message_id: str = None):
                         logger.info(f"Extracting company name and job title from email text")
                         company_name, job_title = extract_job_info_from_email(email_text)
                         logger.info(f"Extracted - Company: {company_name}, Title: {job_title}")
-                        
-                        # Initialize Playwright and perform job scraping
-                        with sync_playwright() as playwright:
-                            # Scrape job posting from Apero's YC page
-                            logger.info("Scraping job posting from Apero's YC page")
-                            raw_description, job_details = scrape_job_posting(playwright, job_title)
+                        job_postings = search_job_postings(company_name, job_title)
+                        if job_postings:
+                            job_url = select_relevant_job_url(job_postings, company_name, job_title)
+                            raw_description, summary = create_scraping_task(job_url)
                             
-                            # Add company name, job title, and summary to result
-                            result["company_name"] = company_name  # Use actual company name from email
-                            result["job_title"] = job_title
-                            result["job_summary"] = raw_description  # Use the raw description as the summary
-                            
-                            # Add additional job details if available
-                            if job_details:
-                                result["job_details"] = job_details
+                        # Add company name, job title, and summary to result
+                        result["company_name"] = company_name  # Use actual company name from email
+                        result["job_title"] = job_title
+                        result["job_summary"] = raw_description  # Use the raw description as the summary
                     except Exception as e:
                         logger.error(f"Error getting job summary: {str(e)}")
                         result["job_summary"] = ""
@@ -411,3 +344,68 @@ def process_email(email_text, message_id: str = None):
     logger.error(f"Failed to process email after {retries} attempts.")
     return None
 
+def summarize_job_description(description: str) -> str:
+    """
+    Use OpenAI to generate a concise summary of the job description.
+    """
+    client = openai.OpenAI(api_key=OPENAI_API_KEY)
+    
+    prompt = f"""
+    Please provide a concise summary of this job description, focusing on:
+    1. Key responsibilities
+    2. Required qualifications
+    3. Preferred qualifications
+    4. Any notable benefits or company information
+    
+    Job Description:
+    {description}
+    
+    Format the summary in clear sections with bullet points.
+    """
+    
+    response = client.chat.completions.create(
+        model=settings.OPENAI_MODEL,
+        messages=[
+            {"role": "system", "content": "You are a job description analyzer that creates clear, concise summaries."},
+            {"role": "user", "content": prompt}
+        ],
+        temperature=0.3
+    )
+    
+    return response.choices[0].message.content.strip()
+
+def select_relevant_job_url(search_results: List[Dict[str, str]], company_name: str, job_title: str) -> str:
+    """
+    Use OpenAI to analyze search results and select the most relevant job posting URL.
+    """
+    client = openai.OpenAI(api_key=OPENAI_API_KEY)
+    
+    # Format search results as a string
+    search_results_text = "\n".join([
+        f"Title: {r['title']}\nURL: {r['url']}\nSnippet: {r['snippet']}"
+        for r in search_results
+    ])
+    
+    prompt = f"""
+    Given the following Google search results for "{company_name} {job_title}", 
+    select the most relevant job posting URL. Consider:
+    1. Official company career pages or ATS systems (like Greenhouse, Workday, etc.)
+    2. Relevance to the specific company and job title
+    3. Recency of the posting
+    
+    Search Results:
+    {search_results_text}
+    
+    Return only the URL of the most relevant job posting.
+    """
+    
+    response = client.chat.completions.create(
+        model=settings.OPENAI_MODEL,
+        messages=[
+            {"role": "system", "content": "You are a job search assistant that helps identify the most relevant job posting URLs."},
+            {"role": "user", "content": prompt}
+        ],
+        temperature=0.1
+    )
+    
+    return response.choices[0].message.content.strip()
