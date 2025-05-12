@@ -5,10 +5,9 @@ import logging
 from google.ai.generativelanguage_v1beta2 import GenerateTextResponse
 from playwright.sync_api import Playwright
 from browserbase import Browserbase
-import openai
 from typing import List, Dict, Tuple
-import os
 from pathlib import Path
+from playwright.sync_api import sync_playwright
 
 from utils.config_utils import get_settings
 
@@ -21,6 +20,9 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
+
+# Initialize Browserbase client at module level
+bb = Browserbase(api_key=settings.BROWSERBASE_API_KEY)
 
 def extract_job_info_from_email(email_content: str) -> Tuple[str, str]:
     """
@@ -64,69 +66,96 @@ def extract_job_info_from_email(email_content: str) -> Tuple[str, str]:
     logger.error("Failed to extract job info after all retries")
     return "unknown", "unknown"
 
-def search_job_posting(company_name: str, job_title: str) -> List[Dict[str, str]]:
+def search_job_posting_with_playwright(playwright: Playwright, company_name: str, job_title: str) -> List[Dict[str, str]]:
     """
     Search for job posting using Google via Browserbase.
+    Takes a Playwright instance as a parameter.
     """
-    with Playwright() as playwright:
-        # Create a session on Browserbase
-        bb = Browserbase(api_key=settings.BROWSERBASE_API_KEY)
-        session = bb.sessions.create(
-            project_id=settings.BROWSERBASE_PROJECT_ID,
-            browser_type="chromium",
-            headless=True
-        )
-        logger.info(f"Session replay URL: https://browserbase.com/sessions/{session.id}")
+    # Create a session using the module-level client
+    session = bb.sessions.create(project_id=settings.BROWSERBASE_PROJECT_ID)
+    logger.info(f"Session replay URL: https://browserbase.com/sessions/{session.id}")
 
-        try:
-            # Connect to the remote session
-            chromium = playwright.chromium
-            browser = chromium.connect_over_cdp(session.connect_url)
-            context = browser.contexts[0]
-            page = context.pages[0]
+    try:
+        # Connect to the remote session
+        chromium = playwright.chromium
+        browser = chromium.connect_over_cdp(session.connect_url)
+        context = browser.contexts[0]
+        page = context.pages[0]
 
-            # Construct search query
-            search_query = f"{company_name} {job_title} job posting careers"
-            search_url = f"https://www.google.com/search?q={search_query.replace(' ', '+')}"
-            
-            # Navigate to Google search
-            page.goto(search_url)
-            
-            # Wait for search results to load
-            page.wait_for_selector('div.g')
-            
-            # Extract search results
-            results = []
-            search_elements = page.query_selector_all('div.g')
-            
-            for element in search_elements[:5]:  # Get top 5 results
-                try:
-                    title_element = element.query_selector('h3')
-                    link_element = element.query_selector('a')
-                    snippet_element = element.query_selector('div.VwiC3b')
+        # Construct search query
+        search_query = f"{company_name} {job_title} job posting careers"
+        search_url = f"https://www.google.com/search?q={search_query.replace(' ', '+')}"
+        
+        # Navigate to Google search
+        page.goto(search_url)
+        
+        # Wait for search results to load
+        page.wait_for_selector('div.g')
+        
+        # Extract search results
+        results = []
+        search_elements = page.query_selector_all('div.g')
+        
+        for element in search_elements[:5]:  # Get top 5 results
+            try:
+                title_element = element.query_selector('h3')
+                link_element = element.query_selector('a')
+                snippet_element = element.query_selector('div.VwiC3b')
+                
+                if title_element and link_element and snippet_element:
+                    title = title_element.inner_text()
+                    url = link_element.get_attribute('href')
+                    snippet = snippet_element.inner_text()
                     
-                    if title_element and link_element and snippet_element:
-                        title = title_element.inner_text()
-                        url = link_element.get_attribute('href')
-                        snippet = snippet_element.inner_text()
-                        
-                        # Only include results that look like job postings
-                        if any(keyword in title.lower() for keyword in ['job', 'career', 'position', 'opening']):
-                            results.append({
-                                'title': title,
-                                'url': url,
-                                'snippet': snippet
-                            })
-                except Exception as e:
-                    logger.warning(f"Failed to extract search result: {str(e)}")
-                    continue
-            
-            return results
-            
-        finally:
-            # Close the browser
-            browser.close()
-            logger.info("Browser session closed")
+                    # Only include results that look like job postings
+                    if any(keyword in title.lower() for keyword in ['job', 'career', 'position', 'opening']):
+                        results.append({
+                            'title': title,
+                            'url': url,
+                            'snippet': snippet
+                        })
+            except Exception as e:
+                logger.warning(f"Failed to extract search result: {str(e)}")
+                continue
+        
+        return results
+        
+    finally:
+        # Close the browser
+        page.close()
+        browser.close()
+        logger.info("Browser session closed")
+
+def scrape_job_description_with_playwright(playwright: Playwright, url: str) -> Tuple[str, str]:
+    """
+    Scrape job description from a given URL using Browserbase.
+    Takes a Playwright instance as a parameter.
+    """
+    # Create a session using the module-level client
+    session = bb.sessions.create(project_id=settings.BROWSERBASE_PROJECT_ID)
+    logger.info(f"Session replay URL: https://browserbase.com/sessions/{session.id}")
+
+    try:
+        # Connect to the remote session
+        chromium = playwright.chromium
+        browser = chromium.connect_over_cdp(session.connect_url)
+        context = browser.contexts[0]
+        page = context.pages[0]
+
+        # Navigate to the job posting
+        page.goto(url)
+        
+        # Extract and summarize job description
+        raw_description = extract_job_description(page)
+        summary = summarize_job_description(raw_description)
+        
+        return raw_description, summary
+        
+    finally:
+        # Close the browser
+        page.close()
+        browser.close()
+        logger.info("Browser session closed")
 
 def select_relevant_job_url(search_results: List[Dict[str, str]], company_name: str, job_title: str) -> str:
     """
@@ -314,52 +343,30 @@ def process_email(email_text, message_id: str = None):
                         company_name, job_title = extract_job_info_from_email(email_text)
                         logger.info(f"Extracted - Company: {company_name}, Title: {job_title}")
                         
-                        # Search for job posting
-                        logger.info("Searching for job posting")
-                        search_results = search_job_posting(company_name, job_title)
-                        if search_results:
-                            logger.info(f"Found {len(search_results)} search results")
-                            # Select most relevant URL
-                            logger.info("Selecting most relevant URL")
-                            selected_url = select_relevant_job_url(search_results, company_name, job_title)
-                            logger.info(f"Selected URL: {selected_url}")
+                        # Initialize Playwright and perform job search and scraping
+                        with sync_playwright() as playwright:
+                            # Search for job posting
+                            logger.info("Searching for job posting")
+                            search_results = search_job_posting_with_playwright(playwright, company_name, job_title)
                             
-                            # Create a session on Browserbase
-                            logger.info("Creating Browserbase session")
-                            bb = Browserbase(api_key=settings.BROWSERBASE_API_KEY)
-                            session = bb.sessions.create(project_id=settings.BROWSERBASE_PROJECT_ID)
-                            logger.info(f"Session created with ID: {session.id}")
-                            
-                            try:
-                                # Connect to the remote session
-                                logger.info("Connecting to remote browser session")
-                                with Playwright() as playwright:
-                                    chromium = playwright.chromium
-                                    browser = chromium.connect_over_cdp(session.connect_url)
-                                    context = browser.contexts[0]
-                                    page = context.pages[0]
-                                    
-                                    # Navigate to the job posting
-                                    logger.info("Navigating to job posting URL")
-                                    page.goto(selected_url)
-                                    
-                                    # Extract and summarize job description
-                                    logger.info("Extracting job description")
-                                    raw_description = extract_job_description(page)
-                                    logger.info("Generating job summary")
-                                    summary = summarize_job_description(raw_description)
-                                    logger.info("Job summary generated successfully")
-                                    
-                                    # Add company name, job title, and summary to result
-                                    result["company_name"] = company_name
-                                    result["job_title"] = job_title
-                                    result["job_summary"] = summary
-                            except Exception as e:
-                                logger.error(f"Error scraping job description: {str(e)}")
+                            if search_results:
+                                logger.info(f"Found {len(search_results)} search results")
+                                # Select most relevant URL
+                                logger.info("Selecting most relevant URL")
+                                selected_url = select_relevant_job_url(search_results, company_name, job_title)
+                                logger.info(f"Selected URL: {selected_url}")
+                                
+                                # Scrape job description
+                                logger.info("Scraping job description")
+                                raw_description, summary = scrape_job_description_with_playwright(playwright, selected_url)
+                                
+                                # Add company name, job title, and summary to result
+                                result["company_name"] = company_name
+                                result["job_title"] = job_title
+                                result["job_summary"] = summary
+                            else:
+                                logger.warning("No search results found for job posting")
                                 result["job_summary"] = ""
-                        else:
-                            logger.warning("No search results found for job posting")
-                            result["job_summary"] = ""
                     except Exception as e:
                         logger.error(f"Error getting job summary: {str(e)}")
                         result["job_summary"] = ""
