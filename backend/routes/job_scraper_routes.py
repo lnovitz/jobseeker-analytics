@@ -1,5 +1,5 @@
 import os
-from playwright.sync_api import Playwright, sync_playwright
+from playwright.sync_api import Playwright
 from browserbase import Browserbase
 from fastapi import APIRouter, Depends, Request, BackgroundTasks, HTTPException
 from slowapi import Limiter
@@ -13,15 +13,21 @@ from utils.auth_utils import AuthenticatedUser
 from google.oauth2.credentials import Credentials
 import json
 from utils.config_utils import get_settings
-from google.auth.transport.requests import Request
+from google.auth.transport.requests import Request as GoogleRequest
 from googleapiclient.discovery import build
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
-from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 import base64
 import pickle
 import os.path
+from fastapi import APIRouter, Depends, Request, BackgroundTasks, HTTPException
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from utils.email_utils import get_email
+from utils.auth_utils import AuthenticatedUser
+from google.oauth2.credentials import Credentials
+import json
 limiter = Limiter(key_func=get_remote_address)
 TOKEN_PICKLE_FILE = 'token.pickle'
 # Logger setup
@@ -46,7 +52,7 @@ def get_gmail_service():
     # Refresh or create new credentials if needed
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
+            creds.refresh(GoogleRequest())
         else:
             flow = InstalledAppFlow.from_client_secrets_file(settings.CLIENT_SECRETS_FILE,
         settings.GOOGLE_SCOPES)
@@ -425,9 +431,42 @@ async def search_job_posting(company_name: str, job_title: str) -> List[Dict[str
             logger.info("Browser session closed")
 
 if __name__ == "__main__":
-    with sync_playwright() as playwright:
-        raw_desc, summary = run(playwright)
-        print("\nRaw Description:")
-        print(raw_desc)
-        print("\nSummary:")
-        print(summary)
+    import asyncio
+    from fastapi import Request
+    from google.oauth2.credentials import Credentials
+    import json
+    
+    async def scrape_single_email(message_id: str):
+        # Create a mock request with session data
+        request = Request({"type": "http", "method": "GET"})
+        request.session = {
+            "creds": json.dumps({
+                "token": "your_token_here",
+                "refresh_token": "your_refresh_token_here",
+                "token_uri": "https://oauth2.googleapis.com/token",
+                "client_id": settings.GOOGLE_CLIENT_ID,
+                "client_secret": settings.GOOGLE_API_KEY,
+                "scopes": settings.GOOGLE_SCOPES
+            })
+        }
+        
+        try:
+            # Call the endpoint
+            response = await get_email_and_scrape(
+                request=request,
+                message_id=message_id,
+                background_tasks=BackgroundTasks(),
+                user_id="test_user"
+            )
+            
+            print("\nEmail Content:")
+            print(response["email_content"])
+            
+        except Exception as e:
+            print(f"Error: {str(e)}")
+    
+    # Replace this with your message ID
+    message_id = "196bd8ecc03e8d69"
+    
+    # Run the async function
+    asyncio.run(scrape_single_email(message_id))
