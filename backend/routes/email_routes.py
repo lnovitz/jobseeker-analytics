@@ -261,6 +261,11 @@ def fetch_emails_to_db(user: AuthenticatedUser, request: Request, last_updated: 
                     )
                     result = {"company_name": "unknown", "application_status": "unknown", "job_title": "unknown"}
 
+                # Skip false positive emails
+                if result.get("application_status") == "False positive":
+                    logger.info(f"user_id:{user_id} Skipping false positive email with id {msg_id}")
+                    continue
+
                 message_data = {
                     "id": msg_id,
                     "company_name": result.get("company_name", "unknown"),

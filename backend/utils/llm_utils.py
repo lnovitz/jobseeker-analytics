@@ -34,14 +34,16 @@ def extract_job_info_from_email(email_content: str) -> Tuple[str, str]:
     )
     
     response = client.chat.completions.create(
-        model="gpt-4-turbo-preview",
+        model="gpt-4.1",
         messages=[
             {"role": "system", "content": "You are an email parser that extracts job application information."},
             {"role": "user", "content": prompt}
         ],
         temperature=0.1
     )
-    
+    # add logging
+    logger.info(f"Response: {response}")
+    logger.info(f"Response stripped: {response.choices[0].message.content.strip()}")
     result = response.choices[0].message.content.strip()
     company_name, job_title = result.split('|')
     return company_name.strip(), job_title.strip()
@@ -129,7 +131,7 @@ def select_relevant_job_url(search_results: List[Dict[str, str]], company_name: 
     )
     
     response = client.chat.completions.create(
-        model="gpt-4-turbo-preview",
+        model="gpt-4.1",
         messages=[
             {"role": "system", "content": "You are a job search assistant that helps identify the most relevant job posting URLs."},
             {"role": "user", "content": prompt}
@@ -261,22 +263,32 @@ def process_email(email_text):
                 
                 # If we have a valid job application (not a false positive), try to get the job summary
                 if result and result.get("application_status") and result["application_status"] != "False positive":
+                    logger.info("Valid job application found, attempting to get job summary")
                     try:
                         # Extract company and job title from email
+                        logger.info(f"Extracting company name and job title from email text {email_text}")
                         company_name, job_title = extract_job_info_from_email(email_text)
+                        logger.info(f"Extracted - Company: {company_name}, Title: {job_title}")
                         
                         # Search for job posting
+                        logger.info("Searching for job posting")
                         search_results = search_job_posting(company_name, job_title)
                         if search_results:
+                            logger.info(f"Found {len(search_results)} search results")
                             # Select most relevant URL
+                            logger.info("Selecting most relevant URL")
                             selected_url = select_relevant_job_url(search_results, company_name, job_title)
+                            logger.info(f"Selected URL: {selected_url}")
                             
                             # Create a session on Browserbase
+                            logger.info("Creating Browserbase session")
                             bb = Browserbase(api_key=settings.BROWSERBASE_API_KEY)
                             session = bb.sessions.create(project_id=settings.BROWSERBASE_PROJECT_ID)
+                            logger.info(f"Session created with ID: {session.id}")
                             
                             try:
                                 # Connect to the remote session
+                                logger.info("Connecting to remote browser session")
                                 with Playwright() as playwright:
                                     chromium = playwright.chromium
                                     browser = chromium.connect_over_cdp(session.connect_url)
@@ -284,11 +296,15 @@ def process_email(email_text):
                                     page = context.pages[0]
                                     
                                     # Navigate to the job posting
+                                    logger.info("Navigating to job posting URL")
                                     page.goto(selected_url)
                                     
                                     # Extract and summarize job description
+                                    logger.info("Extracting job description")
                                     raw_description = extract_job_description(page)
+                                    logger.info("Generating job summary")
                                     summary = summarize_job_description(raw_description)
+                                    logger.info("Job summary generated successfully")
                                     
                                     # Add company name, job title, and summary to result
                                     result["company_name"] = company_name
@@ -297,9 +313,14 @@ def process_email(email_text):
                             except Exception as e:
                                 logger.error(f"Error scraping job description: {str(e)}")
                                 result["job_summary"] = ""
+                        else:
+                            logger.warning("No search results found for job posting")
+                            result["job_summary"] = ""
                     except Exception as e:
                         logger.error(f"Error getting job summary: {str(e)}")
                         result["job_summary"] = ""
+                else:
+                    logger.info("Not a valid job application or false positive, skipping job summary")
                 
                 return result
             else:
