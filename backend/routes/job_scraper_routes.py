@@ -6,7 +6,6 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 import logging
 from utils.config_utils import get_settings
-from utils.llm_utils import summarize_job_description
 from utils.task_utils import create_task, update_task
 from session.session_layer import validate_session
 from typing import List, Dict, Tuple
@@ -15,8 +14,8 @@ from datetime import datetime
 import database
 import json
 from sqlmodel import Session
-import database
 from db.processing_tasks import TaskRuns, PENDING, STARTED, FINISHED, FAILED
+import openai
 
 limiter = Limiter(key_func=get_remote_address)
 
@@ -30,6 +29,7 @@ BROWSERBASE_API_KEY = settings.BROWSERBASE_API_KEY
 BROWSERBASE_PROJECT_ID = settings.BROWSERBASE_PROJECT_ID
 GOOGLE_CSE_API_KEY = settings.GOOGLE_CSE_API_KEY
 GOOGLE_CSE_ID = settings.GOOGLE_CSE_ID
+OPENAI_API_KEY = settings.OPENAI_API_KEY
 
 # Initialize Browserbase client
 bb = Browserbase(api_key=BROWSERBASE_API_KEY)
@@ -76,7 +76,41 @@ def search_job_postings(company_name: str, job_title: str) -> List[Dict[str, str
         logger.error(f"Error searching job postings: {str(e)}")
         return []
 
-
+def select_relevant_job_url(search_results: List[Dict[str, str]], company_name: str, job_title: str) -> str:
+    """
+    Use OpenAI to analyze search results and select the most relevant job posting URL.
+    """
+    client = openai.OpenAI(api_key=OPENAI_API_KEY)
+    
+    # Format search results as a string
+    search_results_text = "\n".join([
+        f"Title: {r['title']}\nURL: {r['url']}\nSnippet: {r['snippet']}"
+        for r in search_results
+    ])
+    
+    prompt = f"""
+    Given the following Google search results for "{company_name} {job_title}", 
+    select the most relevant job posting URL. Consider:
+    1. Official company career pages or ATS systems (like Greenhouse, Workday, etc.)
+    2. Relevance to the specific company and job title
+    3. Recency of the posting
+    
+    Search Results:
+    {search_results_text}
+    
+    Return only the URL of the most relevant job posting.
+    """
+    
+    response = client.chat.completions.create(
+        model=settings.OPENAI_MODEL,
+        messages=[
+            {"role": "system", "content": "You are a job search assistant that helps identify the most relevant job posting URLs."},
+            {"role": "user", "content": prompt}
+        ],
+        temperature=0.1
+    )
+    
+    return response.choices[0].message.content.strip()
 
 def scrape_job_description(url: str, task_id: str, db_session: Session) -> None:
     """
@@ -113,6 +147,8 @@ def scrape_job_description(url: str, task_id: str, db_session: Session) -> None:
             
             # Generate summary
             summary = summarize_job_description(raw_description)
+            
+            # Update task with results
             update_task(db_session, task_id, FINISHED, result={
                 "raw_description": raw_description,
                 "summary": summary,
@@ -123,6 +159,7 @@ def scrape_job_description(url: str, task_id: str, db_session: Session) -> None:
     except Exception as e:
         logger.error(f"Error scraping job description: {str(e)}")
         update_task(db_session, task_id, FAILED, error=str(e))
+
     finally:
         # Close the browser
         if 'page' in locals():
@@ -131,6 +168,35 @@ def scrape_job_description(url: str, task_id: str, db_session: Session) -> None:
             browser.close()
         logger.info("Browser session closed")
 
+def summarize_job_description(description: str) -> str:
+    """
+    Use OpenAI to generate a concise summary of the job description.
+    """
+    client = openai.OpenAI(api_key=OPENAI_API_KEY)
+    
+    prompt = f"""
+    Please provide a concise summary of this job description, focusing on:
+    1. Key responsibilities
+    2. Required qualifications
+    3. Preferred qualifications
+    4. Any notable benefits or company information
+    
+    Job Description:
+    {description}
+    
+    Format the summary in clear sections with bullet points.
+    """
+    
+    response = client.chat.completions.create(
+        model=settings.OPENAI_MODEL,
+        messages=[
+            {"role": "system", "content": "You are a job description analyzer that creates clear, concise summaries."},
+            {"role": "user", "content": prompt}
+        ],
+        temperature=0.3
+    )
+    
+    return response.choices[0].message.content.strip()
 
 @router.post("/tasks")
 @limiter.limit("5/minute")
@@ -164,7 +230,7 @@ async def create_scraping_task(
     
     task = create_task(db_session, user_id, "scrape_job_description")
         
-        # Add the scraping task to background tasks after commit
+    # Add the scraping task to background tasks after commit
     background_tasks.add_task(
         scrape_job_description,
         url=url,

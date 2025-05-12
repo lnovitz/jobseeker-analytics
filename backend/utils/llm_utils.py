@@ -7,8 +7,7 @@ from playwright.sync_api import Playwright
 from browserbase import Browserbase
 from typing import List, Dict, Tuple
 from pathlib import Path
-from utils.llm_utils import search_job_postings, create_scraping_task
-
+from routes.job_scraper_routes import search_job_postings, select_relevant_job_url
 from utils.config_utils import get_settings
 import openai
 
