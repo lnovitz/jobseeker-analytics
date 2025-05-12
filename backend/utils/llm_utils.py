@@ -1,8 +1,12 @@
 import google.generativeai as genai
 import time
 import json
-from google.ai.generativelanguage_v1beta2 import GenerateTextResponse
 import logging
+from google.ai.generativelanguage_v1beta2 import GenerateTextResponse
+from playwright.sync_api import Playwright
+from browserbase import Browserbase
+import openai
+from typing import List, Dict, Tuple
 
 from utils.config_utils import get_settings
 
@@ -16,25 +20,226 @@ logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+def extract_job_info_from_email(email_content: str) -> Tuple[str, str]:
+    """
+    Extract company name and job title from application confirmation email.
+    Uses OpenAI to parse the email content.
+    """
+    client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
+    
+    prompt = (
+        "Extract the company name and job title from this application confirmation email.\n"
+        "Return the result in this exact format: COMPANY_NAME|JOB_TITLE\n\n"
+        f"Email content:\n{email_content}"
+    )
+    
+    response = client.chat.completions.create(
+        model="gpt-4-turbo-preview",
+        messages=[
+            {"role": "system", "content": "You are an email parser that extracts job application information."},
+            {"role": "user", "content": prompt}
+        ],
+        temperature=0.1
+    )
+    
+    result = response.choices[0].message.content.strip()
+    company_name, job_title = result.split('|')
+    return company_name.strip(), job_title.strip()
+
+def search_job_posting(company_name: str, job_title: str) -> List[Dict[str, str]]:
+    """
+    Search for job posting using Google via Browserbase.
+    """
+    with Playwright() as playwright:
+        # Create a session on Browserbase
+        bb = Browserbase(api_key=settings.BROWSERBASE_API_KEY)
+        session = bb.sessions.create(project_id=settings.BROWSERBASE_PROJECT_ID)
+        logger.info(f"Session replay URL: https://browserbase.com/sessions/{session.id}")
+
+        try:
+            # Connect to the remote session
+            chromium = playwright.chromium
+            browser = chromium.connect_over_cdp(session.connect_url)
+            context = browser.contexts[0]
+            page = context.pages[0]
+
+            # Construct search query
+            search_query = f"{company_name} {job_title} job posting careers"
+            search_url = f"https://www.google.com/search?q={search_query.replace(' ', '+')}"
+            
+            # Navigate to Google search
+            page.goto(search_url)
+            
+            # Wait for search results to load
+            page.wait_for_selector('div.g')
+            
+            # Extract search results
+            results = []
+            search_elements = page.query_selector_all('div.g')
+            
+            for element in search_elements[:5]:  # Get top 5 results
+                try:
+                    title_element = element.query_selector('h3')
+                    link_element = element.query_selector('a')
+                    snippet_element = element.query_selector('div.VwiC3b')
+                    
+                    if title_element and link_element and snippet_element:
+                        title = title_element.inner_text()
+                        url = link_element.get_attribute('href')
+                        snippet = snippet_element.inner_text()
+                        
+                        # Only include results that look like job postings
+                        if any(keyword in title.lower() for keyword in ['job', 'career', 'position', 'opening']):
+                            results.append({
+                                'title': title,
+                                'url': url,
+                                'snippet': snippet
+                            })
+                except Exception as e:
+                    logger.warning(f"Failed to extract search result: {str(e)}")
+                    continue
+            
+            return results
+            
+        finally:
+            # Close the browser
+            browser.close()
+            logger.info("Browser session closed")
+
+def select_relevant_job_url(search_results: List[Dict[str, str]], company_name: str, job_title: str) -> str:
+    """
+    Use OpenAI to analyze search results and select the most relevant job posting URL.
+    """
+    client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
+    
+    # Format search results
+    formatted_results = "\n".join([
+        f"Title: {r['title']}\nURL: {r['url']}\nSnippet: {r['snippet']}\n"
+        for r in search_results
+    ])
+    
+    prompt = (
+        f"Given the following Google search results for \"{company_name} {job_title}\", \n"
+        "select the most relevant job posting URL. Consider:\n"
+        "1. Official company career pages or ATS systems (like Greenhouse, Workday, etc.)\n"
+        "2. Relevance to the specific company and job title\n"
+        "3. Recency of the posting\n\n"
+        f"Search Results:\n{formatted_results}\n\n"
+        "Return only the URL of the most relevant job posting."
+    )
+    
+    response = client.chat.completions.create(
+        model="gpt-4-turbo-preview",
+        messages=[
+            {"role": "system", "content": "You are a job search assistant that helps identify the most relevant job posting URLs."},
+            {"role": "user", "content": prompt}
+        ],
+        temperature=0.1
+    )
+    
+    return response.choices[0].message.content.strip()
+
+def extract_job_description(page) -> str:
+    """
+    Extract the job description text from the page.
+    """
+    # Common selectors for job description sections
+    selectors = [
+        '[data-test="jobDescriptionText"]',  # LinkedIn
+        '.job-description',  # Common class
+        '#job-description',  # Common ID
+        '[class*="description"]',  # Class containing 'description'
+        '[id*="description"]',  # ID containing 'description'
+        'article',  # Common for job postings
+        '.content',  # Common content class
+    ]
+    
+    # Try each selector
+    for selector in selectors:
+        try:
+            element = page.query_selector(selector)
+            if element:
+                text = element.inner_text()
+                if len(text) > 100:  # Basic validation that we found actual content
+                    return text
+        except Exception as e:
+            logger.warning(f"Failed to extract with selector {selector}: {str(e)}")
+            continue
+    
+    # Fallback: get all text content
+    return page.inner_text()
+
+def summarize_job_description(description: str) -> str:
+    """
+    Use OpenAI to generate a concise summary of the job description.
+    """
+    client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
+    
+    prompt = (
+        "Please provide a concise summary of this job description, focusing on:\n"
+        "1. Key responsibilities\n"
+        "2. Required qualifications\n"
+        "3. Preferred qualifications\n"
+        "4. Any notable benefits or company information\n\n"
+        f"Job Description:\n{description}\n\n"
+        "Format the summary in clear sections with bullet points."
+    )
+    
+    response = client.chat.completions.create(
+        model="gpt-4.1",
+        messages=[
+            {"role": "system", "content": "You are a job description analyzer that creates clear, concise summaries."},
+            {"role": "user", "content": prompt}
+        ],
+        temperature=0.3
+    )
+    
+    return response.choices[0].message.content.strip()
 
 def process_email(email_text):
+    """
+    Process an email to extract job application status.
+    Company name and job title will be extracted separately using job scraping functionality.
+    """
+    # Extract application status using Gemini
     prompt = f"""
-        Extract the company name, job application status, and job title (role) from the following email. 
-        Job application status can be a value from the following list:
-        ["rejected", "no response", "request for availability", "interview scheduled", "offer"]
-        Note that "no response" means that there is only a neutral, automated or human confirmation of the application being received.
-        Note that "interview scheduled" implies a calendar invite with a meeting date and time has been sent.
-        Note that "request for availability" implies waiting on the candidate to provide their availability.
-        Note that job_title is the role that the user is applying for Ex: "Software Engineer", "Product Engineer", "Data Analyst"
-        Provide the output in JSON format, for example:  "company_name": "company_name", "application_status": "status", "job_title": "job_title"
-        Remove backticks. Only use double quotes. Enclose key and value pairs in a single pair of curly braces.
-        If the email is obviously not related to a job application, return an empty pair of curly braces like this {{}}
+        Extract the job application status from the following email. 
+        Job application status must be one of these exact values:
+        [
+            "False positive",
+            "Application confirmation",
+            "Rejection",
+            "Availability request",
+            "Information request",
+            "Assessment sent",
+            "Interview invitation",
+            "Did not apply - they reached out",
+            "Action required from company",
+            "Hiring freeze notification",
+            "Withdrew application",
+            "Offer"
+        ]
+        
+        Rules for determining status:
+        - "False positive" if the email is not related to a job application
+        - "Application confirmation" for standard "we received your application" emails
+        - "Rejection" for any explicit rejection or "not moving forward" message
+        - "Availability request" when company asks for candidate's availability
+        - "Information request" when company needs additional information
+        - "Assessment sent" when company sends a test/assessment
+        - "Interview invitation" when company invites to interview
+        - "Did not apply - they reached out" when company initiated contact
+        - "Action required from company" when waiting on company's response
+        - "Hiring freeze notification" when position is frozen/closed
+        - "Withdrew application" when candidate withdrew
+        - "Offer" when a job offer is extended
+        
+        Provide the output in JSON format with only the application_status field.
+        Example: {{"application_status": "Application confirmation"}}
+        
         Email: {email_text}
     """
-
+    
     retries = 3  # Max retries
     delay = 60  # Initial delay
     for attempt in range(retries):
@@ -44,6 +249,7 @@ def process_email(email_text):
             response.resolve()
             response_json: str = response.text
             logger.info("Received response from model: %s", response_json)
+            
             if response_json:
                 cleaned_response_json = (
                     response_json.replace("json", "")
@@ -51,14 +257,51 @@ def process_email(email_text):
                     .replace("'", '"')
                     .strip()
                 )
-                cleaned_response_json = (
-                    response_json.replace("json", "")
-                    .replace("`", "")
-                    .replace("'", '"')
-                    .strip()
-                )
-                logger.info("Cleaned response: %s", cleaned_response_json)
-                return json.loads(cleaned_response_json)
+                result = json.loads(cleaned_response_json)
+                
+                # If we have a valid job application (not a false positive), try to get the job summary
+                if result and result.get("application_status") and result["application_status"] != "False positive":
+                    try:
+                        # Extract company and job title from email
+                        company_name, job_title = extract_job_info_from_email(email_text)
+                        
+                        # Search for job posting
+                        search_results = search_job_posting(company_name, job_title)
+                        if search_results:
+                            # Select most relevant URL
+                            selected_url = select_relevant_job_url(search_results, company_name, job_title)
+                            
+                            # Create a session on Browserbase
+                            bb = Browserbase(api_key=settings.BROWSERBASE_API_KEY)
+                            session = bb.sessions.create(project_id=settings.BROWSERBASE_PROJECT_ID)
+                            
+                            try:
+                                # Connect to the remote session
+                                with Playwright() as playwright:
+                                    chromium = playwright.chromium
+                                    browser = chromium.connect_over_cdp(session.connect_url)
+                                    context = browser.contexts[0]
+                                    page = context.pages[0]
+                                    
+                                    # Navigate to the job posting
+                                    page.goto(selected_url)
+                                    
+                                    # Extract and summarize job description
+                                    raw_description = extract_job_description(page)
+                                    summary = summarize_job_description(raw_description)
+                                    
+                                    # Add company name, job title, and summary to result
+                                    result["company_name"] = company_name
+                                    result["job_title"] = job_title
+                                    result["job_summary"] = summary
+                            except Exception as e:
+                                logger.error(f"Error scraping job description: {str(e)}")
+                                result["job_summary"] = ""
+                    except Exception as e:
+                        logger.error(f"Error getting job summary: {str(e)}")
+                        result["job_summary"] = ""
+                
+                return result
             else:
                 logger.error("Empty response received from the model.")
                 return None
