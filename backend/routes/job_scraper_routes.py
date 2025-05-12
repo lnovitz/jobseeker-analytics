@@ -179,6 +179,7 @@ async def create_scraping_task(
 @router.get("/tasks/{task_id}")
 @limiter.limit("5/minute")
 async def get_task_status(
+    request: Request,
     task_id: str,
     user_id: str = Depends(validate_session)
 ):
