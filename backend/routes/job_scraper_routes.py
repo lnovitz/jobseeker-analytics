@@ -9,7 +9,6 @@ from utils.config_utils import get_settings
 from session.session_layer import validate_session
 import openai
 from typing import List, Dict, Tuple
-import re
 
 limiter = Limiter(key_func=get_remote_address)
 
