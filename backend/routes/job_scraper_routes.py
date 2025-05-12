@@ -430,6 +430,35 @@ async def search_job_posting(company_name: str, job_title: str) -> List[Dict[str
             await browser.close()
             logger.info("Browser session closed")
 
+def search_email_by_subject(subject: str) -> str:
+    """
+    Search for an email by subject line and return its message ID.
+    """
+    service = get_gmail_service()
+    
+    # Search for emails with the subject
+    query = f'subject:"{subject}"'
+    results = service.users().messages().list(userId='me', q=query).execute()
+    
+    messages = results.get('messages', [])
+    if not messages:
+        raise Exception(f"No emails found with subject: {subject}")
+    
+    # Get the most recent email
+    message = messages[0]
+    message_id = message['id']
+    
+    # Get full message details to verify subject
+    msg = service.users().messages().get(userId='me', id=message_id).execute()
+    headers = msg['payload']['headers']
+    subject_header = next((h['value'] for h in headers if h['name'].lower() == 'subject'), None)
+    
+    if not subject_header:
+        raise Exception("Could not find subject in email headers")
+    
+    print(f"\nFound email with subject: {subject_header}")
+    return message_id
+
 if __name__ == "__main__":
     import asyncio
     from fastapi import Request
@@ -465,8 +494,14 @@ if __name__ == "__main__":
         except Exception as e:
             print(f"Error: {str(e)}")
     
-    # Replace this with your message ID
-    message_id = "196bd8ecc03e8d69"
-    
-    # Run the async function
-    asyncio.run(scrape_single_email(message_id))
+    try:
+        # Search for the email by subject
+        subject = "Thank you for application to Snorkel AI"
+        message_id = search_email_by_subject(subject)
+        print(f"\nMessage ID: {message_id}")
+        
+        # Run the async function to scrape the email
+        asyncio.run(scrape_single_email(message_id))
+        
+    except Exception as e:
+        print(f"Error: {str(e)}")
