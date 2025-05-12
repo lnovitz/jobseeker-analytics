@@ -33,20 +33,40 @@ def extract_job_info_from_email(email_content: str) -> Tuple[str, str]:
         f"Email content:\n{email_content}"
     )
     
-    response = client.chat.completions.create(
-        model="gpt-4.1",
-        messages=[
-            {"role": "system", "content": "You are an email parser that extracts job application information."},
-            {"role": "user", "content": prompt}
-        ],
-        temperature=0.1
-    )
-    # add logging
-    logger.info(f"Response: {response}")
-    logger.info(f"Response stripped: {response.choices[0].message.content.strip()}")
-    result = response.choices[0].message.content.strip()
-    company_name, job_title = result.split('|')
-    return company_name.strip(), job_title.strip()
+    retries = 3
+    delay = 60  # Start with 60 second delay
+    
+    for attempt in range(retries):
+        try:
+            logger.info(f"Attempt {attempt + 1} to extract job info")
+            response = client.chat.completions.create(
+                model="gpt-4.1",
+                messages=[
+                    {"role": "system", "content": "You are an email parser that extracts job application information."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.1
+            )
+            
+            result = response.choices[0].message.content.strip()
+            logger.info(f"Response: {result}")
+            company_name, job_title = result.split('|')
+            return company_name.strip(), job_title.strip()
+            
+        except Exception as e:
+            if "429" in str(e):
+                logger.warning(f"Rate limit hit. Retrying in {delay} seconds (attempt {attempt + 1})")
+                time.sleep(delay)
+                delay *= 2  # Exponential backoff
+            else:
+                logger.error(f"Error extracting job info: {str(e)}")
+                if attempt == retries - 1:  # Last attempt
+                    raise
+                time.sleep(delay)
+    
+    # If all retries failed, return unknown values
+    logger.error("Failed to extract job info after all retries")
+    return "unknown", "unknown"
 
 def search_job_posting(company_name: str, job_title: str) -> List[Dict[str, str]]:
     """
@@ -266,7 +286,7 @@ def process_email(email_text):
                     logger.info("Valid job application found, attempting to get job summary")
                     try:
                         # Extract company and job title from email
-                        logger.info(f"Extracting company name and job title from email text {email_text}")
+                        logger.info(f"Extracting company name and job title from email text")
                         company_name, job_title = extract_job_info_from_email(email_text)
                         logger.info(f"Extracted - Company: {company_name}, Title: {job_title}")
                         
