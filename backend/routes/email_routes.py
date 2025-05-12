@@ -241,7 +241,7 @@ def fetch_emails_to_db(user: AuthenticatedUser, request: Request, last_updated: 
 
             if msg:
                 try:
-                    result = process_email(msg["text_content"])
+                    result = process_email(msg["text_content"], message_id=msg_id)
                     # if values are empty strings or null, set them to "unknown"
                     for key in result.keys():
                         if not result[key]:
