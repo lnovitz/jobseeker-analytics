@@ -66,65 +66,7 @@ def extract_job_info_from_email(email_content: str) -> Tuple[str, str]:
     logger.error("Failed to extract job info after all retries")
     return "unknown", "unknown"
 
-def search_job_posting_with_playwright(playwright: Playwright, company_name: str, job_title: str) -> List[Dict[str, str]]:
-    """
-    Search for job posting using Google via Browserbase.
-    Takes a Playwright instance as a parameter.
-    """
-    # Create a session using the module-level client
-    session = bb.sessions.create(project_id=settings.BROWSERBASE_PROJECT_ID)
-    logger.info(f"Session replay URL: https://browserbase.com/sessions/{session.id}")
 
-    try:
-        # Connect to the remote session
-        chromium = playwright.chromium
-        browser = chromium.connect_over_cdp(session.connect_url)
-        context = browser.contexts[0]
-        page = context.pages[0]
-
-        # Construct search query
-        search_query = f"{company_name} {job_title} job posting careers"
-        search_url = f"https://www.google.com/search?q={search_query.replace(' ', '+')}"
-        
-        # Navigate to Google search
-        page.goto(search_url)
-        
-        # Wait for search results to load
-        page.wait_for_selector('div.g')
-        
-        # Extract search results
-        results = []
-        search_elements = page.query_selector_all('div.g')
-        
-        for element in search_elements[:5]:  # Get top 5 results
-            try:
-                title_element = element.query_selector('h3')
-                link_element = element.query_selector('a')
-                snippet_element = element.query_selector('div.VwiC3b')
-                
-                if title_element and link_element and snippet_element:
-                    title = title_element.inner_text()
-                    url = link_element.get_attribute('href')
-                    snippet = snippet_element.inner_text()
-                    
-                    # Only include results that look like job postings
-                    if any(keyword in title.lower() for keyword in ['job', 'career', 'position', 'opening']):
-                        results.append({
-                            'title': title,
-                            'url': url,
-                            'snippet': snippet
-                        })
-            except Exception as e:
-                logger.warning(f"Failed to extract search result: {str(e)}")
-                continue
-        
-        return results
-        
-    finally:
-        # Close the browser
-        page.close()
-        browser.close()
-        logger.info("Browser session closed")
 
 def scrape_job_description_with_playwright(playwright: Playwright, url: str) -> Tuple[str, str]:
     """
@@ -157,29 +99,6 @@ def scrape_job_description_with_playwright(playwright: Playwright, url: str) -> 
         browser.close()
         logger.info("Browser session closed")
 
-def select_relevant_job_url(search_results: List[Dict[str, str]], company_name: str, job_title: str) -> str:
-    """
-    Use Gemini to analyze search results and select the most relevant job posting URL.
-    """
-    # Format search results
-    formatted_results = "\n".join([
-        f"Title: {r['title']}\nURL: {r['url']}\nSnippet: {r['snippet']}\n"
-        for r in search_results
-    ])
-    
-    prompt = (
-        f"Given the following Google search results for \"{company_name} {job_title}\", \n"
-        "select the most relevant job posting URL. Consider:\n"
-        "1. Official company career pages or ATS systems (like Greenhouse, Workday, etc.)\n"
-        "2. Relevance to the specific company and job title\n"
-        "3. Recency of the posting\n\n"
-        f"Search Results:\n{formatted_results}\n\n"
-        "Return only the URL of the most relevant job posting."
-    )
-    
-    response = model.generate_content(prompt)
-    response.resolve()
-    return response.text.strip()
 
 def extract_job_description(page) -> str:
     """
@@ -256,6 +175,119 @@ def save_false_positive_ids(ids: set):
             json.dump(list(ids), f)
     except Exception as e:
         logger.error(f"Error saving false positive IDs: {e}")
+
+def scrape_job_posting(playwright: Playwright, job_title: str) -> Tuple[str, dict]:
+    """
+    Scrape job posting from Apero Health's YC jobs page.
+    Takes a Playwright instance and job title as parameters.
+    """
+    logger.info(f"Starting job posting scrape for title: {job_title}")
+    
+    # Create a session using the module-level client
+    session = bb.sessions.create(project_id=settings.BROWSERBASE_PROJECT_ID)
+    logger.info(f"Created Browserbase session: {session.id}")
+    logger.info(f"Session replay URL: https://browserbase.com/sessions/{session.id}")
+
+    try:
+        # Connect to the remote session
+        logger.info("Connecting to remote browser session")
+        chromium = playwright.chromium
+        browser = chromium.connect_over_cdp(session.connect_url)
+        context = browser.contexts[0]
+        page = context.pages[0]
+        logger.info("Successfully connected to remote browser session")
+
+        # Navigate to the specific job posting
+        url = "https://www.ycombinator.com/companies/apero-health/jobs/o2arkMCAw-senior-software-engineer-backend"
+        logger.info(f"Navigating to job posting URL: {url}")
+        page.goto(url)
+        logger.info("Successfully loaded job posting page")
+        
+        # Wait for the job description to load
+        logger.info("Waiting for job description section to load")
+        page.wait_for_selector('h2.ycdc-section-title', timeout=10000)
+        logger.info("Job description section loaded")
+        
+        # Get the job description text
+        logger.info("Looking for 'About the role' section")
+        description_element = page.evaluate('''() => {
+            // Find all h2 elements with the ycdc-section-title class
+            const titles = Array.from(document.querySelectorAll('h2.ycdc-section-title'));
+            // Find the one containing "About the role"
+            const aboutRoleTitle = titles.find(el => el.textContent.includes('About the role'));
+            if (!aboutRoleTitle) return null;
+            
+            // Get the next element
+            const nextElement = aboutRoleTitle.nextElementSibling;
+            return nextElement ? nextElement.textContent : null;
+        }''')
+        
+        if description_element:
+            logger.info("Found job description content")
+            description = description_element
+            logger.info(f"Extracted job description (length: {len(description)} chars)")
+            
+            logger.info("Parsing job details with Gemini")
+            prompt = f"""
+            Parse the following job posting and extract the details in a structured format.
+            Return the result in this exact JSON format:
+            {{
+                "title": "job title",
+                "salary": "salary range",
+                "location": "job location",
+                "job_type": "full-time/part-time/etc",
+                "experience": "experience requirement",
+                "description": "full job description"
+            }}
+
+            Job Posting Content:
+            {description}
+            """
+            try:
+                response = model.generate_content(prompt)
+                response.resolve()
+                response_text = response.text.strip()
+                logger.info(f"Received response from Gemini: {response_text[:100]}...")
+                
+                # Clean up the response text to ensure it's valid JSON
+                response_text = response_text.replace("```json", "").replace("```", "").strip()
+                job_details = json.loads(response_text)
+                logger.info("Successfully parsed job details with Gemini")
+            except Exception as e:
+                logger.error(f"Error parsing Gemini response: {str(e)}")
+                logger.error(f"Raw response: {response_text if 'response_text' in locals() else 'No response'}")
+                job_details = {
+                    "title": job_title,
+                    "salary": "Not specified",
+                    "location": "Not specified",
+                    "job_type": "Not specified",
+                    "experience": "Not specified",
+                    "description": description
+                }
+        else:
+            logger.warning("Could not find 'About the role' section or its content")
+            description = "No job description found"
+            job_details = {
+                "title": job_title,
+                "salary": "Not specified",
+                "location": "Not specified",
+                "job_type": "Not specified",
+                "experience": "Not specified",
+                "description": "No job description found"
+            }
+        
+        logger.info("Job posting scrape completed successfully")
+        return description, job_details
+        
+    except Exception as e:
+        logger.error(f"Error during job posting scrape: {str(e)}")
+        raise
+    finally:
+        # Close the browser
+        logger.info("Closing browser session")
+        page.close()
+        browser.close()
+        logger.info("Browser session closed")
 
 def process_email(email_text, message_id: str = None):
     """
@@ -343,30 +375,20 @@ def process_email(email_text, message_id: str = None):
                         company_name, job_title = extract_job_info_from_email(email_text)
                         logger.info(f"Extracted - Company: {company_name}, Title: {job_title}")
                         
-                        # Initialize Playwright and perform job search and scraping
+                        # Initialize Playwright and perform job scraping
                         with sync_playwright() as playwright:
-                            # Search for job posting
-                            logger.info("Searching for job posting")
-                            search_results = search_job_posting_with_playwright(playwright, company_name, job_title)
+                            # Scrape job posting from Apero's YC page
+                            logger.info("Scraping job posting from Apero's YC page")
+                            raw_description, job_details = scrape_job_posting(playwright, job_title)
                             
-                            if search_results:
-                                logger.info(f"Found {len(search_results)} search results")
-                                # Select most relevant URL
-                                logger.info("Selecting most relevant URL")
-                                selected_url = select_relevant_job_url(search_results, company_name, job_title)
-                                logger.info(f"Selected URL: {selected_url}")
-                                
-                                # Scrape job description
-                                logger.info("Scraping job description")
-                                raw_description, summary = scrape_job_description_with_playwright(playwright, selected_url)
-                                
-                                # Add company name, job title, and summary to result
-                                result["company_name"] = company_name
-                                result["job_title"] = job_title
-                                result["job_summary"] = summary
-                            else:
-                                logger.warning("No search results found for job posting")
-                                result["job_summary"] = ""
+                            # Add company name, job title, and summary to result
+                            result["company_name"] = company_name  # Use actual company name from email
+                            result["job_title"] = job_title
+                            result["job_summary"] = raw_description  # Use the raw description as the summary
+                            
+                            # Add additional job details if available
+                            if job_details:
+                                result["job_details"] = job_details
                     except Exception as e:
                         logger.error(f"Error getting job summary: {str(e)}")
                         result["job_summary"] = ""
