@@ -269,6 +269,7 @@ def fetch_emails_to_db(user: AuthenticatedUser, request: Request, last_updated: 
                     "subject": msg.get("subject", "unknown"),
                     "job_title": result.get("job_title", "unknown"),
                     "from": msg.get("from", "unknown"),
+                    "job_summary": result.get("job_summary", "")
                 }
                 email_record = create_user_email(user, message_data)
                 if email_record:
