@@ -207,22 +207,46 @@ def summarize_job_description(description: str) -> str:
         "Format the summary in clear sections with bullet points."
     )
     
-    response = client.chat.completions.create(
-        model="gpt-4.1",
-        messages=[
-            {"role": "system", "content": "You are a job description analyzer that creates clear, concise summaries."},
-            {"role": "user", "content": prompt}
-        ],
-        temperature=0.3
-    )
-    
-    return response.choices[0].message.content.strip()
+def get_false_positive_file_path() -> Path:
+    """Get the path to the false positive IDs file."""
+    return Path("backend/data/false_positive_ids.json")
 
-def process_email(email_text):
+def load_false_positive_ids() -> set:
+    """Load the set of false positive email IDs."""
+    file_path = get_false_positive_file_path()
+    if not file_path.exists():
+        return set()
+    
+    try:
+        with open(file_path, 'r') as f:
+            return set(json.load(f))
+    except Exception as e:
+        logger.error(f"Error loading false positive IDs: {e}")
+        return set()
+
+def save_false_positive_ids(ids: set):
+    """Save the set of false positive email IDs."""
+    file_path = get_false_positive_file_path()
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+    
+    try:
+        with open(file_path, 'w') as f:
+            json.dump(list(ids), f)
+    except Exception as e:
+        logger.error(f"Error saving false positive IDs: {e}")
+
+def process_email(email_text, message_id: str = None):
     """
     Process an email to extract job application status.
     Company name and job title will be extracted separately using job scraping functionality.
     """
+    # Check if this is a known false positive
+    if message_id:
+        false_positive_ids = load_false_positive_ids()
+        if message_id in false_positive_ids:
+            logger.info(f"Skipping known false positive email: {message_id}")
+            return {"application_status": "False positive"}
+    
     # Extract application status using Gemini
     prompt = f"""
         Extract the job application status from the following email. 
@@ -280,6 +304,13 @@ def process_email(email_text):
                     .strip()
                 )
                 result = json.loads(cleaned_response_json)
+                
+                # If this is a false positive and we have a message ID, save it
+                if message_id and result.get("application_status") == "False positive":
+                    false_positive_ids = load_false_positive_ids()
+                    false_positive_ids.add(message_id)
+                    save_false_positive_ids(false_positive_ids)
+                    logger.info(f"Added message ID {message_id} to false positives list")
                 
                 # If we have a valid job application (not a false positive), try to get the job summary
                 if result and result.get("application_status") and result["application_status"] != "False positive":
