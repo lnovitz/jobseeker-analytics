@@ -6,7 +6,7 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 import logging
 from utils.config_utils import get_settings
-from utils.session_layer import validate_session
+from session.session_layer import validate_session
 import openai
 from typing import List, Dict, Tuple
 import re
@@ -63,18 +63,15 @@ def summarize_job_description(description: str) -> str:
     """
     client = openai.OpenAI(api_key=OPENAI_API_KEY)
     
-    prompt = f"""
-    Please provide a concise summary of this job description, focusing on:
-    1. Key responsibilities
-    2. Required qualifications
-    3. Preferred qualifications
-    4. Any notable benefits or company information
-    
-    Job Description:
-    {description}
-    
-    Format the summary in clear sections with bullet points.
-    """
+    prompt = (
+        "Please provide a concise summary of this job description, focusing on:\n"
+        "1. Key responsibilities\n"
+        "2. Required qualifications\n"
+        "3. Preferred qualifications\n"
+        "4. Any notable benefits or company information\n\n"
+        f"Job Description:\n{description}\n\n"
+        "Format the summary in clear sections with bullet points."
+    )
     
     response = client.chat.completions.create(
         model="gpt-4-turbo-preview",
@@ -90,7 +87,7 @@ def summarize_job_description(description: str) -> str:
 def select_relevant_job_url(search_results: List[Dict[str, str]], company_name: str, job_title: str) -> str:
     """
     Use OpenAI to analyze search results and select the most relevant job posting URL.
-    
+
     Args:
         search_results: List of dictionaries containing 'title', 'url', and 'snippet' for each result
         company_name: Name of the company from the confirmation email
@@ -101,19 +98,21 @@ def select_relevant_job_url(search_results: List[Dict[str, str]], company_name: 
     """
     client = openai.OpenAI(api_key=OPENAI_API_KEY)
     
-    # Prepare the prompt
-    prompt = f"""
-    Given the following Google search results for "{company_name} {job_title}", 
-    select the most relevant job posting URL. Consider:
-    1. Official company career pages or ATS systems (like Greenhouse, Workday, etc.)
-    2. Relevance to the specific company and job title
-    3. Recency of the posting
+    # Format search results
+    formatted_results = "\n".join([
+        f"Title: {r['title']}\nURL: {r['url']}\nSnippet: {r['snippet']}\n"
+        for r in search_results
+    ])
     
-    Search Results:
-    {[f"Title: {r['title']}\nURL: {r['url']}\nSnippet: {r['snippet']}\n" for r in search_results]}
-    
-    Return only the URL of the most relevant job posting.
-    """
+    prompt = (
+        f"Given the following Google search results for \"{company_name} {job_title}\", \n"
+        "select the most relevant job posting URL. Consider:\n"
+        "1. Official company career pages or ATS systems (like Greenhouse, Workday, etc.)\n"
+        "2. Relevance to the specific company and job title\n"
+        "3. Recency of the posting\n\n"
+        f"Search Results:\n{formatted_results}\n\n"
+        "Return only the URL of the most relevant job posting."
+    )
     
     response = client.chat.completions.create(
         model="gpt-4-turbo-preview",  # Using GPT-4 for better accuracy
