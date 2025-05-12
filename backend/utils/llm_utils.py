@@ -7,6 +7,8 @@ from playwright.sync_api import Playwright
 from browserbase import Browserbase
 import openai
 from typing import List, Dict, Tuple
+import os
+from pathlib import Path
 
 from utils.config_utils import get_settings
 
@@ -23,10 +25,8 @@ logging.basicConfig(
 def extract_job_info_from_email(email_content: str) -> Tuple[str, str]:
     """
     Extract company name and job title from application confirmation email.
-    Uses OpenAI to parse the email content.
+    Uses Gemini to parse the email content.
     """
-    client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
-    
     prompt = (
         "Extract the company name and job title from this application confirmation email.\n"
         "Return the result in this exact format: COMPANY_NAME|JOB_TITLE\n\n"
@@ -39,17 +39,13 @@ def extract_job_info_from_email(email_content: str) -> Tuple[str, str]:
     for attempt in range(retries):
         try:
             logger.info(f"Attempt {attempt + 1} to extract job info")
-            response = client.chat.completions.create(
-                model="gpt-4.1",
-                messages=[
-                    {"role": "system", "content": "You are an email parser that extracts job application information."},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.1
-            )
-            
-            result = response.choices[0].message.content.strip()
+            response = model.generate_content(prompt)
+            response.resolve()
+            result = response.text.strip()
             logger.info(f"Response: {result}")
+            
+            # Clean up the response to ensure it's in the correct format
+            result = result.replace("```", "").replace("json", "").strip()
             company_name, job_title = result.split('|')
             return company_name.strip(), job_title.strip()
             
@@ -75,7 +71,11 @@ def search_job_posting(company_name: str, job_title: str) -> List[Dict[str, str]
     with Playwright() as playwright:
         # Create a session on Browserbase
         bb = Browserbase(api_key=settings.BROWSERBASE_API_KEY)
-        session = bb.sessions.create(project_id=settings.BROWSERBASE_PROJECT_ID)
+        session = bb.sessions.create(
+            project_id=settings.BROWSERBASE_PROJECT_ID,
+            browser_type="chromium",
+            headless=True
+        )
         logger.info(f"Session replay URL: https://browserbase.com/sessions/{session.id}")
 
         try:
@@ -130,10 +130,8 @@ def search_job_posting(company_name: str, job_title: str) -> List[Dict[str, str]
 
 def select_relevant_job_url(search_results: List[Dict[str, str]], company_name: str, job_title: str) -> str:
     """
-    Use OpenAI to analyze search results and select the most relevant job posting URL.
+    Use Gemini to analyze search results and select the most relevant job posting URL.
     """
-    client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
-    
     # Format search results
     formatted_results = "\n".join([
         f"Title: {r['title']}\nURL: {r['url']}\nSnippet: {r['snippet']}\n"
@@ -150,16 +148,9 @@ def select_relevant_job_url(search_results: List[Dict[str, str]], company_name: 
         "Return only the URL of the most relevant job posting."
     )
     
-    response = client.chat.completions.create(
-        model="gpt-4.1",
-        messages=[
-            {"role": "system", "content": "You are a job search assistant that helps identify the most relevant job posting URLs."},
-            {"role": "user", "content": prompt}
-        ],
-        temperature=0.1
-    )
-    
-    return response.choices[0].message.content.strip()
+    response = model.generate_content(prompt)
+    response.resolve()
+    return response.text.strip()
 
 def extract_job_description(page) -> str:
     """
@@ -191,22 +182,24 @@ def extract_job_description(page) -> str:
     # Fallback: get all text content
     return page.inner_text()
 
-def summarize_job_description(description: str) -> str:
+def summarize_job_description(job_description: str) -> str:
     """
-    Use OpenAI to generate a concise summary of the job description.
+    Use Gemini to generate a concise summary of the job description.
     """
-    client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
-    
     prompt = (
-        "Please provide a concise summary of this job description, focusing on:\n"
+        "Generate a concise summary of this job description, focusing on:\n"
         "1. Key responsibilities\n"
         "2. Required qualifications\n"
-        "3. Preferred qualifications\n"
-        "4. Any notable benefits or company information\n\n"
-        f"Job Description:\n{description}\n\n"
-        "Format the summary in clear sections with bullet points."
+        "3. Company culture/benefits\n"
+        "4. Location/remote policy\n\n"
+        f"Job Description:\n{job_description}\n\n"
+        "Return a well-formatted summary with clear sections."
     )
     
+    response = model.generate_content(prompt)
+    response.resolve()
+    return response.text.strip()
+
 def get_false_positive_file_path() -> Path:
     """Get the path to the false positive IDs file."""
     return Path("backend/data/false_positive_ids.json")
