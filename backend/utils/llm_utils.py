@@ -6,10 +6,13 @@ from google.ai.generativelanguage_v1beta2 import GenerateTextResponse
 from playwright.sync_api import Playwright
 from typing import List, Dict, Tuple
 from pathlib import Path
-from routes.job_scraper_routes import search_job_postings, select_relevant_job_url, create_scraping_task, get_task_status
+from routes.job_scraper_routes import search_job_postings, select_relevant_job_url, _get_task_status
 from utils.config_utils import get_settings
+from utils.task_utils import create_task
+from routes.job_scraper_routes import scrape_job_description
 import openai
-from fastapi import Request, BackgroundTasks
+from fastapi import Request, Depends
+from session.session_layer import validate_session
 
 settings = get_settings()
 OPENAI_API_KEY = settings.OPENAI_API_KEY
@@ -224,7 +227,7 @@ def scrape_job_posting(playwright: Playwright, job_title: str) -> Tuple[str, dic
         browser.close()
         logger.info("Browser session closed")
 
-async def process_email(request: Request, email_text: str, message_id: str = None, db_session=None):
+async def process_email(request: Request, email_text: str, message_id: str = None, db_session=None, user_id: str = Depends(validate_session)):
     """
     Process an email to extract job application status.
     Company name and job title will be extracted separately using job scraping functionality.
@@ -329,32 +332,34 @@ async def process_email(request: Request, email_text: str, message_id: str = Non
                             logger.info(f"Selected job URL: {job_url}")
                             
                             # Create a task for scraping the job description
-                            logger.info("Adding job URL to request session")
-                            request.session["job_url"] = job_url
-                            
                             logger.info("Creating scraping task")
-                            task_response = await create_scraping_task(
-                                request=request,
+                            task = create_task(db_session, user_id, "job_scraping")
+                            
+                            # Add the scraping task to background tasks
+                            settings.background_tasks.add_task(
+                                scrape_job_description,
+                                url=job_url,
+                                task_id=task.task_id,
                                 db_session=db_session
                             )
-                            logger.info(f"Scraping task response: {task_response}")
+                            logger.info(f"Created scraping task with ID: {task.task_id}")
                             
-                            if task_response and "task_id" in task_response:
-                                logger.info(f"Waiting for task completion. Task ID: {task_response['task_id']}")
-                                task_status = await get_task_status(task_response["task_id"])
-                                logger.info(f"Task status: {task_status}")
-                                
-                                if task_status and task_status.get("status") == "finished":
-                                    raw_description = task_status.get("result", {}).get("raw_description", "")
-                                    summary = task_status.get("result", {}).get("summary", "")
-                                    logger.info(f"Got raw description (length: {len(raw_description)}) and summary (length: {len(summary)})")
-                                    result["job_summary"] = raw_description
-                                    result["job_summary_ai"] = summary
-                                else:
-                                    logger.warning(f"Task did not finish successfully. Status: {task_status}")
+                            # Wait for task completion
+                            logger.info(f"Waiting for task completion. Task ID: {task.task_id}")
+                            task_status = await _get_task_status(request, task.task_id)
+                            logger.info(f"Task status: {task_status}")
+                            
+                            if task_status and task_status.get("status") == "finished":
+                                raw_description = task_status.get("result", {}).get("raw_description", "")
+                                summary = task_status.get("result", {}).get("summary", "")
+                                logger.info(f"Got raw description (length: {len(raw_description)}) and summary (length: {len(summary)})")
+                                result["job_summary"] = raw_description
+                                result["job_summary_ai"] = summary
                             else:
-                                logger.warning("No task_id in response")
-                            
+                                logger.warning(f"Task did not finish successfully. Status: {task_status}")
+                        else:
+                            logger.warning("No job postings found")
+                        
                         # Add company name, job title, and summary to result
                         result["company_name"] = company_name
                         result["job_title"] = job_title

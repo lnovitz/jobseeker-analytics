@@ -258,10 +258,13 @@ async def get_task_status(
         },
         "error": "string (if failed)"
     }
-
     To get the status of a task, you can use the following curl command:
     curl -X GET "http://localhost:8000/tasks/123"
     """
+    return await _get_task_status(task_id, user_id)
+
+async def _get_task_status(task_id: str, user_id: str):
+    """Internal function to get task status, can be called directly or via endpoint."""
     with Session(database.engine) as db_session:
         task = db_session.get(TaskRuns, task_id)
         if not task or task.user_id != user_id or task.task_type != "job_scraping":
