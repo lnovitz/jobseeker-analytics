@@ -226,7 +226,7 @@ def fetch_emails_to_db(user: AuthenticatedUser, request: Request, last_updated: 
         db_session.commit()
 
         email_records = []  # list to collect email records
-
+        relevant_emails = 0
         for idx, message in enumerate(messages):
             message_data = {}
             # (email_subject, email_from, email_domain, company_name, email_dt)
@@ -238,10 +238,10 @@ def fetch_emails_to_db(user: AuthenticatedUser, request: Request, last_updated: 
             db_session.commit()
 
             msg = get_email(message_id=msg_id, gmail_instance=service)
-
+            
             if msg:
                 try:
-                    result = process_email(msg["text_content"])
+                    result = process_email(msg["text_content"], message_id=msg_id)
                     # if values are empty strings or null, set them to "unknown"
                     for key in result.keys():
                         if not result[key]:
@@ -261,6 +261,13 @@ def fetch_emails_to_db(user: AuthenticatedUser, request: Request, last_updated: 
                     )
                     result = {"company_name": "unknown", "application_status": "unknown", "job_title": "unknown"}
 
+                # Skip false positive emails
+                if result.get("application_status") == "False positive":
+                    logger.info(f"user_id:{user_id} Skipping false positive email with id {msg_id}")
+                    continue
+                else:
+                    relevant_emails += 1
+
                 message_data = {
                     "id": msg_id,
                     "company_name": result.get("company_name", "unknown"),
@@ -269,10 +276,13 @@ def fetch_emails_to_db(user: AuthenticatedUser, request: Request, last_updated: 
                     "subject": msg.get("subject", "unknown"),
                     "job_title": result.get("job_title", "unknown"),
                     "from": msg.get("from", "unknown"),
+                    "job_summary": result.get("job_summary", "")
                 }
                 email_record = create_user_email(user, message_data)
                 if email_record:
                     email_records.append(email_record)
+            if relevant_emails == 1:
+                break 
 
         # batch insert all records at once
         if email_records:

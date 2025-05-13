@@ -26,6 +26,9 @@ class Settings(BaseSettings):
     DATABASE_URL_DOCKER: str = (
         "postgresql://postgres:postgres@db:5432/jobseeker_analytics"
     )
+    BROWSERBASE_API_KEY: str = "default-for-local"
+    BROWSERBASE_PROJECT_ID: str = "default-for-local"
+    OPENAI_API_KEY: str = "default-for-local"
 
     @field_validator("GOOGLE_SCOPES", mode="before")
     @classmethod
