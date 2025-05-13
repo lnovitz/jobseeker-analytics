@@ -23,9 +23,6 @@ logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
-# Initialize Browserbase client at module level
-bb = Browserbase(api_key=settings.BROWSERBASE_API_KEY)
-
 def extract_job_info_from_email(email_content: str) -> Tuple[str, str]:
     """
     Extract company name and job title from application confirmation email.
@@ -122,16 +119,15 @@ def scrape_job_posting(playwright: Playwright, job_title: str) -> Tuple[str, dic
     """
     logger.info(f"Starting job posting scrape for title: {job_title}")
     
-    # Create a session using the module-level client
-    session = bb.sessions.create(project_id=settings.BROWSERBASE_PROJECT_ID)
-    logger.info(f"Created Browserbase session: {session.id}")
-    logger.info(f"Session replay URL: https://browserbase.com/sessions/{session.id}")
+
+    logger.info(f"Using Browserbase session: {settings.bb_session.id}")
+    logger.info(f"Session replay URL: https://browserbase.com/sessions/{settings.bb_session.id}")
 
     try:
         # Connect to the remote session
         logger.info("Connecting to remote browser session")
         chromium = playwright.chromium
-        browser = chromium.connect_over_cdp(session.connect_url)
+        browser = chromium.connect_over_cdp(settings.bb_session.connect_url)
         context = browser.contexts[0]
         page = context.pages[0]
         logger.info("Successfully connected to remote browser session")

@@ -6,6 +6,7 @@ from fastapi import BackgroundTasks
 from typing import List
 from typing_extensions import Annotated
 import logging
+from browserbase import Browserbase, BrowserbaseSession
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +32,7 @@ class Settings(BaseSettings):
     BROWSERBASE_PROJECT_ID: str = "default-for-local"
     OPENAI_API_KEY: str = "default-for-local"
     GOOGLE_CSE_API_KEY: str = "default-for-local"
-    GOOGLE_CSE_ID: str = "default-for-local"
+    GOOGLE_CSE_ID: str = "default-for-local"  # https://programmablesearchengine.google.com/controlpanel/
     OPENAI_MODEL: str = "gpt-4.1-nano"
 
 
@@ -47,6 +48,8 @@ class Settings(BaseSettings):
     
     # background tasks instance of fastapi background tasks
     background_tasks: BackgroundTasks = BackgroundTasks()
+    bb_client: Browserbase = Browserbase(api_key=BROWSERBASE_API_KEY)
+    bb_session: BrowserbaseSession = bb_client.sessions.create(project_id=BROWSERBASE_PROJECT_ID)
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 

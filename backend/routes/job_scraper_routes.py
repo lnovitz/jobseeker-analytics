@@ -1,6 +1,5 @@
 import os
 from playwright.sync_api import sync_playwright
-from browserbase import Browserbase
 from fastapi import APIRouter, Depends, Request, HTTPException
 from fastapi.responses import JSONResponse
 from slowapi import Limiter
@@ -26,14 +25,9 @@ logger = logging.getLogger(__name__)
 # Get settings
 settings = get_settings()
 APP_URL = settings.APP_URL
-BROWSERBASE_API_KEY = settings.BROWSERBASE_API_KEY
-BROWSERBASE_PROJECT_ID = settings.BROWSERBASE_PROJECT_ID
 GOOGLE_CSE_API_KEY = settings.GOOGLE_CSE_API_KEY
 GOOGLE_CSE_ID = settings.GOOGLE_CSE_ID
 OPENAI_API_KEY = settings.OPENAI_API_KEY
-
-# Initialize Browserbase client
-bb = Browserbase(api_key=BROWSERBASE_API_KEY)
 
 # FastAPI router
 router = APIRouter()
@@ -124,8 +118,7 @@ def scrape_job_description(url: str, task_id: str, db_session: Session) -> None:
         db_session: Database session for updating task status
     """
     # Create a session on Browserbase
-    bb = Browserbase(api_key=BROWSERBASE_API_KEY)
-    session = bb.sessions.create(project_id=BROWSERBASE_PROJECT_ID)
+
     logger.info(f"Session replay URL: https://browserbase.com/sessions/{session.id}")
 
     try:
@@ -136,7 +129,7 @@ def scrape_job_description(url: str, task_id: str, db_session: Session) -> None:
         with sync_playwright() as playwright:
             # Connect to the remote session
             chromium = playwright.chromium
-            browser = chromium.connect_over_cdp(session.connect_url)
+            browser = chromium.connect_over_cdp(settings.bb_session.connect_url)
             context = browser.contexts[0]
             page = context.pages[0]
 
