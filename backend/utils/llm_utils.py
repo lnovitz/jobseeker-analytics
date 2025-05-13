@@ -382,7 +382,7 @@ def process_email(email_text, message_id: str = None):
                         # Scrape job posting from Apero's YC page
                         logger.info("Scraping job posting from Apero's YC page")
                         steps = get_replication_steps(url="https://en.m.wikipedia.org/wiki/Kintsugi")
-                        raw_description = get_summary(steps) + "\n" + steps
+                        raw_description = get_summary(steps) + "\n" + "".join(steps)
                         
                         # Add company name, job title, and summary to result
                         result["company_name"] = company_name  # Use actual company name from email
