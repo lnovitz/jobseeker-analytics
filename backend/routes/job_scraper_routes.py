@@ -1,7 +1,8 @@
 import os
-from playwright.sync_api import Playwright, sync_playwright
+from playwright.sync_api import sync_playwright
 from browserbase import Browserbase
-from fastapi import APIRouter, Depends, Request, BackgroundTasks, HTTPException
+from fastapi import APIRouter, Depends, Request, HTTPException
+from fastapi.responses import JSONResponse
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 import logging
@@ -100,7 +101,7 @@ def select_relevant_job_url(search_results: List[Dict[str, str]], company_name: 
     
     Return only the URL of the most relevant job posting.
     """
-    
+    logger.info(f"Model: {settings.OPENAI_MODEL}")
     response = client.chat.completions.create(
         model=settings.OPENAI_MODEL,
         messages=[
@@ -186,7 +187,7 @@ def summarize_job_description(description: str) -> str:
     
     Format the summary in clear sections with bullet points.
     """
-    
+    logger.info(f"Model: {settings.OPENAI_MODEL}")
     response = client.chat.completions.create(
         model=settings.OPENAI_MODEL,
         messages=[
@@ -202,7 +203,6 @@ def summarize_job_description(description: str) -> str:
 @limiter.limit("5/minute")
 async def create_scraping_task(
     request: Request,
-    background_tasks: BackgroundTasks,
     db_session: database.DBSession,
     user_id: str = Depends(validate_session)
 ):
@@ -231,17 +231,16 @@ async def create_scraping_task(
     task = create_task(db_session, user_id, "scrape_job_description")
         
     # Add the scraping task to background tasks after commit
-    background_tasks.add_task(
+    settings.background_tasks.add_task(
         scrape_job_description,
         url=url,
         task_id=task.task_id,
         db_session=db_session
     )
-
-    return {
-        "task_id": task.task_id,
-        "status": PENDING
-    }
+    response = JSONResponse(content={"task_id": task.task_id,
+        "status": PENDING})
+    response.background = settings.background_tasks
+    return response
 
 @router.get("/tasks/{task_id}")
 @limiter.limit("5/minute")

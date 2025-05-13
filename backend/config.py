@@ -2,6 +2,7 @@ import json
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict, NoDecode
+from fastapi import BackgroundTasks
 from typing import List
 from typing_extensions import Annotated
 import logging
@@ -31,7 +32,8 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = "default-for-local"
     GOOGLE_CSE_API_KEY: str = "default-for-local"
     GOOGLE_CSE_ID: str = "default-for-local"
-    OPENAI_MODEL: str = "gpt-4o-mini"
+    OPENAI_MODEL: str = "gpt-4.1-nano"
+
 
     @field_validator("GOOGLE_SCOPES", mode="before")
     @classmethod
@@ -42,6 +44,9 @@ class Settings(BaseSettings):
     @property
     def is_publicly_deployed(self) -> bool:
         return self.ENV in ["prod", "staging"]
+    
+    # background tasks instance of fastapi background tasks
+    background_tasks: BackgroundTasks = BackgroundTasks()
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 

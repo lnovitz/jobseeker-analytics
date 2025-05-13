@@ -7,9 +7,10 @@ from playwright.sync_api import Playwright
 from browserbase import Browserbase
 from typing import List, Dict, Tuple
 from pathlib import Path
-from routes.job_scraper_routes import search_job_postings, select_relevant_job_url
+from routes.job_scraper_routes import search_job_postings, select_relevant_job_url, create_scraping_task, get_task_status
 from utils.config_utils import get_settings
 import openai
+from fastapi import Request, BackgroundTasks
 
 settings = get_settings()
 OPENAI_API_KEY = settings.OPENAI_API_KEY
@@ -227,11 +228,19 @@ def scrape_job_posting(playwright: Playwright, job_title: str) -> Tuple[str, dic
         browser.close()
         logger.info("Browser session closed")
 
-def process_email(email_text, message_id: str = None):
+async def process_email(request: Request, email_text: str, message_id: str = None, db_session=None):
     """
     Process an email to extract job application status.
     Company name and job title will be extracted separately using job scraping functionality.
+    
+    Args:
+        request: FastAPI request object
+        email_text: The email content to process
+        message_id: Optional message ID for tracking
+        db_session: Optional database session
     """
+    logger.info(f"Starting process_email for message_id: {message_id}")
+    
     # Check if this is a known false positive
     if message_id:
         false_positive_ids = load_false_positive_ids()
@@ -282,11 +291,11 @@ def process_email(email_text, message_id: str = None):
     delay = 60  # Initial delay
     for attempt in range(retries):
         try:
-            logger.info("Calling generate_content")
+            logger.info(f"Attempt {attempt + 1} to extract application status")
             response: GenerateTextResponse = model.generate_content(prompt)
             response.resolve()
             response_json: str = response.text
-            logger.info("Received response from model: %s", response_json)
+            logger.info(f"Received response from model: {response_json}")
             
             if response_json:
                 cleaned_response_json = (
@@ -296,6 +305,7 @@ def process_email(email_text, message_id: str = None):
                     .strip()
                 )
                 result = json.loads(cleaned_response_json)
+                logger.info(f"Parsed application status: {result.get('application_status')}")
                 
                 # If this is a false positive and we have a message ID, save it
                 if message_id and result.get("application_status") == "False positive":
@@ -309,20 +319,53 @@ def process_email(email_text, message_id: str = None):
                     logger.info("Valid job application found, attempting to get job summary")
                     try:
                         # Extract company and job title from email
-                        logger.info(f"Extracting company name and job title from email text")
+                        logger.info("Extracting company name and job title from email text")
                         company_name, job_title = extract_job_info_from_email(email_text)
                         logger.info(f"Extracted - Company: {company_name}, Title: {job_title}")
+                        
+                        logger.info("Searching for job postings")
                         job_postings = search_job_postings(company_name, job_title)
+                        logger.info(f"Found {len(job_postings) if job_postings else 0} job postings")
+                        
                         if job_postings:
+                            logger.info("Selecting most relevant job URL")
                             job_url = select_relevant_job_url(job_postings, company_name, job_title)
-                            raw_description, summary = create_scraping_task(job_url)
+                            logger.info(f"Selected job URL: {job_url}")
+                            
+                            # Create a task for scraping the job description
+                            logger.info("Adding job URL to request session")
+                            request.session["job_url"] = job_url
+                            
+                            logger.info("Creating scraping task")
+                            task_response = await create_scraping_task(
+                                request=request,
+                                db_session=db_session
+                            )
+                            logger.info(f"Scraping task response: {task_response}")
+                            
+                            if task_response and "task_id" in task_response:
+                                logger.info(f"Waiting for task completion. Task ID: {task_response['task_id']}")
+                                task_status = await get_task_status(task_response["task_id"])
+                                logger.info(f"Task status: {task_status}")
+                                
+                                if task_status and task_status.get("status") == "finished":
+                                    raw_description = task_status.get("result", {}).get("raw_description", "")
+                                    summary = task_status.get("result", {}).get("summary", "")
+                                    logger.info(f"Got raw description (length: {len(raw_description)}) and summary (length: {len(summary)})")
+                                    result["job_summary"] = raw_description
+                                    result["job_summary_ai"] = summary
+                                else:
+                                    logger.warning(f"Task did not finish successfully. Status: {task_status}")
+                            else:
+                                logger.warning("No task_id in response")
                             
                         # Add company name, job title, and summary to result
-                        result["company_name"] = company_name  # Use actual company name from email
+                        result["company_name"] = company_name
                         result["job_title"] = job_title
-                        result["job_summary"] = raw_description  # Use the raw description as the summary
+                        result["job_summary"] = raw_description if 'raw_description' in locals() else ""
+                        logger.info("Added company name, job title, and summary to result")
                     except Exception as e:
-                        logger.error(f"Error getting job summary: {str(e)}")
+                        logger.error(f"Error getting job summary: {str(e)}", exc_info=True)
                         result["job_summary"] = ""
                 else:
                     logger.info("Not a valid job application or false positive, skipping job summary")
@@ -338,7 +381,7 @@ def process_email(email_text, message_id: str = None):
                 )
                 time.sleep(delay)
             else:
-                logger.error(f"process_email exception: {e}")
+                logger.error(f"process_email exception: {e}", exc_info=True)
                 return None
     logger.error(f"Failed to process email after {retries} attempts.")
     return None
@@ -361,7 +404,7 @@ def summarize_job_description(description: str) -> str:
     
     Format the summary in clear sections with bullet points.
     """
-    
+    logger.info(f"Model: {settings.OPENAI_MODEL}")
     response = client.chat.completions.create(
         model=settings.OPENAI_MODEL,
         messages=[
@@ -397,7 +440,7 @@ def select_relevant_job_url(search_results: List[Dict[str, str]], company_name: 
     
     Return only the URL of the most relevant job posting.
     """
-    
+    logger.info(f"Model: {settings.OPENAI_MODEL}")
     response = client.chat.completions.create(
         model=settings.OPENAI_MODEL,
         messages=[
