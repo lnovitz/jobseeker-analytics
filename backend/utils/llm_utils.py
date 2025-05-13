@@ -8,6 +8,7 @@ from browserbase import Browserbase
 from typing import List, Dict, Tuple
 from pathlib import Path
 from playwright.sync_api import sync_playwright
+from utils.tech_spec_utils import get_replication_steps, get_summary
 
 from utils.config_utils import get_settings
 
@@ -366,6 +367,7 @@ def process_email(email_text, message_id: str = None):
                     save_false_positive_ids(false_positive_ids)
                     logger.info(f"Added message ID {message_id} to false positives list")
                 
+                
                 # If we have a valid job application (not a false positive), try to get the job summary
                 if result and result.get("application_status") and result["application_status"] != "False positive":
                     logger.info("Valid job application found, attempting to get job summary")
@@ -376,19 +378,17 @@ def process_email(email_text, message_id: str = None):
                         logger.info(f"Extracted - Company: {company_name}, Title: {job_title}")
                         
                         # Initialize Playwright and perform job scraping
-                        with sync_playwright() as playwright:
-                            # Scrape job posting from Apero's YC page
-                            logger.info("Scraping job posting from Apero's YC page")
-                            raw_description, job_details = scrape_job_posting(playwright, job_title)
+                        raw_description = ""
+                        # Scrape job posting from Apero's YC page
+                        logger.info("Scraping job posting from Apero's YC page")
+                        steps = get_replication_steps(url="https://en.m.wikipedia.org/wiki/Kintsugi")
+                        raw_description = get_summary(steps) + "\n" + steps
+                        
+                        # Add company name, job title, and summary to result
+                        result["company_name"] = company_name  # Use actual company name from email
+                        result["job_title"] = job_title
+                        result["job_summary"] = raw_description  # Use the raw description as the summary
                             
-                            # Add company name, job title, and summary to result
-                            result["company_name"] = company_name  # Use actual company name from email
-                            result["job_title"] = job_title
-                            result["job_summary"] = raw_description  # Use the raw description as the summary
-                            
-                            # Add additional job details if available
-                            if job_details:
-                                result["job_details"] = job_details
                     except Exception as e:
                         logger.error(f"Error getting job summary: {str(e)}")
                         result["job_summary"] = ""
