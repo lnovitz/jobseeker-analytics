@@ -4,7 +4,6 @@ import json
 import logging
 from google.ai.generativelanguage_v1beta2 import GenerateTextResponse
 from playwright.sync_api import Playwright
-from browserbase import Browserbase
 from typing import List, Dict, Tuple
 from pathlib import Path
 from routes.job_scraper_routes import search_job_postings, select_relevant_job_url, create_scraping_task, get_task_status
@@ -119,15 +118,16 @@ def scrape_job_posting(playwright: Playwright, job_title: str) -> Tuple[str, dic
     """
     logger.info(f"Starting job posting scrape for title: {job_title}")
     
-
-    logger.info(f"Using Browserbase session: {settings.bb_session.id}")
-    logger.info(f"Session replay URL: https://browserbase.com/sessions/{settings.bb_session.id}")
+    # Get or create a Browserbase session
+    bb_session = settings.get_browserbase_session()
+    logger.info(f"Using Browserbase session: {bb_session.id}")
+    logger.info(f"Session replay URL: https://browserbase.com/sessions/{bb_session.id}")
 
     try:
         # Connect to the remote session
         logger.info("Connecting to remote browser session")
         chromium = playwright.chromium
-        browser = chromium.connect_over_cdp(settings.bb_session.connect_url)
+        browser = chromium.connect_over_cdp(bb_session.connect_url)
         context = browser.contexts[0]
         page = context.pages[0]
         logger.info("Successfully connected to remote browser session")

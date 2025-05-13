@@ -117,9 +117,10 @@ def scrape_job_description(url: str, task_id: str, db_session: Session) -> None:
         task_id: ID of the task to update
         db_session: Database session for updating task status
     """
-    # Create a session on Browserbase
-
-    logger.info(f"Session replay URL: https://browserbase.com/sessions/{session.id}")
+    # Get or create a Browserbase session
+    bb_session = settings.get_browserbase_session()
+    logger.info(f"Using Browserbase session: {bb_session.id}")
+    logger.info(f"Session replay URL: https://browserbase.com/sessions/{bb_session.id}")
 
     try:
         # Update task status to STARTED
@@ -129,7 +130,7 @@ def scrape_job_description(url: str, task_id: str, db_session: Session) -> None:
         with sync_playwright() as playwright:
             # Connect to the remote session
             chromium = playwright.chromium
-            browser = chromium.connect_over_cdp(settings.bb_session.connect_url)
+            browser = chromium.connect_over_cdp(bb_session.connect_url)
             context = browser.contexts[0]
             page = context.pages[0]
 

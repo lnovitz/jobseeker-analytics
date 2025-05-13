@@ -3,10 +3,10 @@ import json
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict, NoDecode
 from fastapi import BackgroundTasks
-from typing import List
+from typing import List, Any
 from typing_extensions import Annotated
 import logging
-from browserbase import Browserbase, BrowserbaseSession
+from browserbase import Browserbase
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +34,10 @@ class Settings(BaseSettings):
     GOOGLE_CSE_API_KEY: str = "default-for-local"
     GOOGLE_CSE_ID: str = "default-for-local"  # https://programmablesearchengine.google.com/controlpanel/
     OPENAI_MODEL: str = "gpt-4.1-nano"
-
+    # background tasks instance of fastapi background tasks
+    background_tasks: BackgroundTasks = BackgroundTasks()
+    bb_client: Any = None
+    bb_session: Any = None
 
     @field_validator("GOOGLE_SCOPES", mode="before")
     @classmethod
@@ -45,11 +48,17 @@ class Settings(BaseSettings):
     @property
     def is_publicly_deployed(self) -> bool:
         return self.ENV in ["prod", "staging"]
-    
-    # background tasks instance of fastapi background tasks
-    background_tasks: BackgroundTasks = BackgroundTasks()
-    bb_client: Browserbase = Browserbase(api_key=BROWSERBASE_API_KEY)
-    bb_session: BrowserbaseSession = bb_client.sessions.create(project_id=BROWSERBASE_PROJECT_ID)
+
+    def get_browserbase_session(self) -> Any:
+        """Get or create a Browserbase session."""
+        if self.bb_client is None:
+            self.bb_client = Browserbase(api_key=self.BROWSERBASE_API_KEY)
+        
+        if self.bb_session is None:
+            self.bb_session = self.bb_client.sessions.create(project_id=self.BROWSERBASE_PROJECT_ID)
+            logger.info(f"Created new Browserbase session: {self.bb_session.id}")
+        
+        return self.bb_session
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
