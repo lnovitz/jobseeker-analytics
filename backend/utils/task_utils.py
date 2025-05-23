@@ -3,10 +3,12 @@ from sqlmodel import Session
 from typing import Dict, Optional
 import json
 import logging
+from fastapi import Request, Depends
+from session.session_layer import validate_session
 
 logger = logging.getLogger(__name__)
 
-def create_task(db_session: Session, user_id: str, task_type: str = "email_processing") -> TaskRuns:
+def create_task(request: Request, db_session: Session, task_type: str = "email_processing", user_id: str = Depends(validate_session)) -> TaskRuns:
     """Create a new task in the database and return it."""
     logger.info(f"Creating task for user {user_id} with type {task_type}")
     task = TaskRuns(

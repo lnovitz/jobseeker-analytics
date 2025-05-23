@@ -333,7 +333,7 @@ async def process_email(request: Request, email_text: str, message_id: str = Non
                             
                             # Create a task for scraping the job description
                             logger.info("Creating scraping task")
-                            task = create_task(db_session, user_id, "job_scraping")
+                            task = create_task(request, db_session, "job_scraping")
                             
                             # Add the scraping task to background tasks
                             settings.background_tasks.add_task(

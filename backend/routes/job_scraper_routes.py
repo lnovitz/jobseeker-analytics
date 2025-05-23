@@ -222,7 +222,7 @@ async def create_scraping_task(
     if not url:
         raise HTTPException(status_code=400, detail="URL is required")
     
-    task = create_task(db_session, user_id, "scrape_job_description")
+    task = create_task(request, db_session, "scrape_job_description")
         
     # Add the scraping task to background tasks after commit
     settings.background_tasks.add_task(
