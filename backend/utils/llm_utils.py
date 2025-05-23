@@ -227,7 +227,7 @@ def scrape_job_posting(playwright: Playwright, job_title: str) -> Tuple[str, dic
         browser.close()
         logger.info("Browser session closed")
 
-async def process_email(request: Request, email_text: str, message_id: str = None, db_session=None, user_id: str = Depends(validate_session)):
+async def process_email(request: Request, email_text: str, user_id: int, message_id: str = None, db_session=None):
     """
     Process an email to extract job application status.
     Company name and job title will be extracted separately using job scraping functionality.
@@ -333,7 +333,7 @@ async def process_email(request: Request, email_text: str, message_id: str = Non
                             
                             # Create a task for scraping the job description
                             logger.info("Creating scraping task")
-                            task = create_task(request, db_session, "job_scraping")
+                            task = create_task(request, db_session, "job_scraping", user_id)
                             
                             # Add the scraping task to background tasks
                             settings.background_tasks.add_task(

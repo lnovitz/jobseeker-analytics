@@ -246,7 +246,8 @@ async def fetch_emails_to_db(user: AuthenticatedUser, request: Request, last_upd
                         request=request,
                         email_text=msg["text_content"],
                         message_id=msg_id,
-                        db_session=db_session
+                        db_session=db_session,
+                        user_id=user_id,
                     )
                     # if values are empty strings or null, set them to "unknown"
                     if result:
