@@ -138,7 +138,7 @@ def scrape_job_description(url: str, task_id: str, db_session: Session) -> None:
             page.goto(url)
             
             # Extract the job description
-            raw_description = page.inner_text()
+            raw_description = page.inner_text("body")
             
             # Generate summary
             summary = summarize_job_description(raw_description)
