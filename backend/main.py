@@ -15,14 +15,12 @@ from db.utils.user_utils import add_user
 from utils.config_utils import get_settings
 from session.session_layer import validate_session
 from contextlib import asynccontextmanager
-from database import create_db_and_tables
 
 # Import routes
 from routes import email_routes, auth_routes, file_routes, users_routes, start_date_routes, job_scraper_routes
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    create_db_and_tables()
     yield
 
 app = FastAPI(lifespan=lifespan)

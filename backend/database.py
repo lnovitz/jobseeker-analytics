@@ -7,9 +7,6 @@ from sqlalchemy.orm import sessionmaker
 import fastapi
 
 
-def create_db_and_tables():
-    SQLModel.metadata.create_all(engine)
-
 def get_session():
     return Session(engine)
 
