@@ -346,7 +346,7 @@ async def process_email(request: Request, email_text: str, user_id: int, message
                             
                             # Wait for task completion
                             logger.info(f"Waiting for task completion. Task ID: {task.task_id}")
-                            task_status = await _get_task_status(request, task.task_id)
+                            task_status = await _get_task_status(task.task_id, user_id)
                             logger.info(f"Task status: {task_status}")
                             
                             if task_status and task_status.get("status") == "finished":
