@@ -11,3 +11,5 @@ class UserEmails(SQLModel, table=True):
     subject: str
     job_title: str
     email_from: str  # to avoid 'from' being a reserved key word
+    job_summary: str = Field(default="")  # Summary of the job description
+    job_url: str = Field(default="")  # URL of the job posting

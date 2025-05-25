@@ -35,8 +35,6 @@ def engine(postgres_container: PostgresContainer, monkeypatch):
 
     monkeypatch.setattr(database, "engine", test_engine)
 
-    database.create_db_and_tables()
-
     yield test_engine
 
     with test_engine.begin() as transaction:
