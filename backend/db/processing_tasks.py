@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 import sqlalchemy as sa
 from db.users import Users
 import uuid
+from typing import Optional
 
 FINISHED = "finished"
 STARTED = "started"
@@ -26,5 +27,5 @@ class TaskRuns(SQLModel, table=True):
     processed_emails: int = 0
     result: str = Field(default=None, nullable=True)  # JSON string for storing task results
     error: str = Field(default=None, nullable=True)  # Error message if task failed
-
+    email_id: Optional[str] = Field(default=None, nullable=True)  # Email ID if applicable
     user: Users = Relationship()

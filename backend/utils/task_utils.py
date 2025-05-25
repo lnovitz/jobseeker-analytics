@@ -8,13 +8,14 @@ from session.session_layer import validate_session
 
 logger = logging.getLogger(__name__)
 
-def create_task(request: Request, db_session: Session, task_type: str, user_id: int) -> TaskRuns:
+def create_task(request: Request, db_session: Session, task_type: str, user_id: int, email_id: str = None) -> TaskRuns:
     """Create a new task in the database and return it."""
     logger.info(f"Creating task for user {user_id} with type {task_type}")
     task = TaskRuns(
         user_id=user_id,
         status=PENDING,
-        task_type=task_type
+        task_type=task_type,
+        email_id=email_id,
     )
     db_session.add(task)
     db_session.commit()

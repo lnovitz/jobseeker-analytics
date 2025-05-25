@@ -36,6 +36,10 @@ backend/*.csv
 backend/data/
 backend/.vscode/
 
+# Data classification / labeling
+backend/training_data.json
+backend/backend/data/false_positive_ids.json
+
 # Alembic-specific excludes
 # Nothing to exclude as database migration files should be committed
 

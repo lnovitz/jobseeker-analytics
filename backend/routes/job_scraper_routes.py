@@ -107,7 +107,7 @@ def select_relevant_job_url(search_results: List[Dict[str, str]], company_name: 
     
     return response.choices[0].message.content.strip()
 
-def scrape_job_description(url: str, task_id: str, db_session: Session) -> None:
+def scrape_job_description(url: str, task_id: str, db_session: Session, email_id: str) -> None:
     """
     Scrape the job description from the given URL using Browserbase.
     Updates task status and results in the database.
@@ -145,12 +145,18 @@ def scrape_job_description(url: str, task_id: str, db_session: Session) -> None:
             
             # Update task with results
             update_task(db_session, task_id, FINISHED, result={
-                "raw_description": raw_description,
                 "summary": summary,
                 "url": url
             })
             logger.info(f"Updated task {task_id} status to {FINISHED} with results")
-            
+            email_id = db_session.query(TaskRuns).filter_by(task_id=task_id).first().email_id
+            if email_id:
+                email = db_session.query(database.UserEmails).filter_by(id=email_id).first()
+                email.job_summary = summary
+                email.job_url = url
+                db_session.add(email)
+                db_session.commit()
+                logger.info(f"Updated user_emails for task {task_id}")
     except Exception as e:
         logger.error(f"Error scraping job description: {str(e)}")
         update_task(db_session, task_id, FAILED, error=str(e))
@@ -198,7 +204,8 @@ def summarize_job_description(description: str) -> str:
 async def create_scraping_task(
     request: Request,
     db_session: database.DBSession,
-    user_id: str = Depends(validate_session)
+    user_id: str = Depends(validate_session),
+    email_id: str = None
 ):
     """
     Create a new job scraping task.
@@ -222,7 +229,7 @@ async def create_scraping_task(
     if not url:
         raise HTTPException(status_code=400, detail="URL is required")
     
-    task = create_task(request, db_session, "scrape_job_description", user_id)
+    task = create_task(request, db_session, "scrape_job_description", user_id, email_id)
         
     # Add the scraping task to background tasks after commit
     settings.background_tasks.add_task(
